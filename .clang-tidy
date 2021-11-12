@@ -1,0 +1,16 @@
+
+# hicpp-signed-bitwise: disabled because it results in a lot of false positives
+Checks: >
+  *,
+  -llvmlibc-restrict-system-libc-headers,
+  -altera-*,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -hicpp-signed-bitwise,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -llvm-header-guard,
+  -modernize-deprecated-headers,
+
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'

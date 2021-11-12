@@ -1,0 +1,9 @@
+[submodule "deps/multicodec"]
+	path = deps/multicodec
+	url = https://github.com/multiformats/multicodec.git
+[submodule "deps/murmur3"]
+	path = deps/murmur3
+	url = https://github.com/PeterScott/murmur3
+[submodule "deps/multibase"]
+	path = deps/multibase
+	url = https://github.com/multiformats/multibase.git
