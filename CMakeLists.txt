@@ -6,6 +6,8 @@ include(deps/CMakeLists.txt)
 set(CMAKE_C_STANDARD_REQUIRED on)
 set(C_STANDARD 11)
 
+enable_testing()
+
 string(APPEND CMAKE_C_FLAGS " -Wall -Wextra -fstack-protector-all -Wstack-protector -pedantic -D_POSIX_C_SOURCE=201112L")
 string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -fno-omit-frame-pointer")
 string(APPEND CMAKE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer")
@@ -83,7 +85,7 @@ target_compile_options(cid PRIVATE -Werror)
 target_link_libraries(cid multibase multihash multicodec varint)
 
 add_executable(run-tests ./test/main.c)
-target_link_libraries(run-tests cmocka multibase multihash varint m)
+target_link_libraries(run-tests cmocka multibase multihash varint cid m)
 target_include_directories(run-tests PRIVATE include)
 target_compile_options(run-tests PRIVATE -Werror)
 
@@ -118,39 +120,39 @@ else()
   )
 endif()
 
-target_link_libraries(run-tests-asan cmocka multibase multihash varint m)
+target_link_libraries(run-tests-asan cmocka multibase multihash varint cid m)
 target_include_directories(run-tests-asan PRIVATE include)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
   add_executable(run-tests-msan ./test/main.c)
   target_compile_options(run-tests-msan PRIVATE -fsanitize=memory -g -O1 -Werror)
   target_link_options(run-tests-msan PRIVATE -fsanitize=memory -g)
-  target_link_libraries(run-tests-msan cmocka multibase multihash varint m)
+  target_link_libraries(run-tests-msan cmocka multibase multihash varint cid m)
   target_include_directories(run-tests-msan PRIVATE include)
 endif()
 
 add_executable(run-tests-tsan ./test/main.c)
 target_compile_options(run-tests-tsan PRIVATE -fsanitize=thread -g -O1 -Werror)
 target_link_options(run-tests-tsan PRIVATE -fsanitize=thread -g)
-target_link_libraries(run-tests-tsan cmocka multibase multihash varint m)
+target_link_libraries(run-tests-tsan cmocka multibase multihash varint cid m)
 target_include_directories(run-tests-tsan PRIVATE include)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
   add_executable(fuzz-asan ./test/fuzz.c)
   target_compile_options(fuzz-asan PRIVATE -fsanitize=fuzzer,address -g -O1 -Werror)
   target_link_options(fuzz-asan PRIVATE -fsanitize=fuzzer,address -g)
-  target_link_libraries(fuzz-asan multibase multihash varint m)
+  target_link_libraries(fuzz-asan multibase multihash varint cid m)
   target_include_directories(fuzz-asan PRIVATE include)
 
   # used for running fuzzer with valgrind, since valgrind and asan don't play nicely
   add_executable(fuzz ./test/fuzz.c)
   target_compile_options(fuzz PRIVATE -fsanitize=fuzzer -g -O1 -Werror)
   target_link_options(fuzz PRIVATE -fsanitize=fuzzer -g)
-  target_link_libraries(fuzz multibase multihash varint m)
+  target_link_libraries(fuzz multibase multihash varint cid m)
   target_include_directories(fuzz PRIVATE include)
 endif()
 
-add_test(NAME Test COMMAND test)
+add_test(NAME test COMMAND run-tests-asan)
 
 add_executable(mb ./src/main.c)
 target_link_libraries(mb multibase multihash varint)

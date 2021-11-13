@@ -12,6 +12,7 @@
 
 static cid_err cid_read_version_varint(const uint8_t* const bytes, size_t bytes_len, uint64_t* const version_varint, size_t* bytes_read) {
   if (bytes_len == 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
+    // cidv0
     if (version_varint != NULL) {
       *version_varint = 0;
     }
@@ -153,6 +154,30 @@ cid_err cid_str_to_bytes(const char* const cid, uint8_t* const buf, size_t buf_l
   return CID_ERR_OK;
 }
 
+cid_err cid_validate(const uint8_t* const cid, size_t cid_len) { return cid_read_multihash(cid, cid_len, NULL, NULL); }
+
+cid_err cid_str_validate(const char* const cid) {
+  size_t len = 0;
+  cid_err err = cid_str_to_bytes_len(cid, &len);
+  if (err) {
+    return err;
+  }
+  uint8_t* buf = calloc(len, sizeof(uint8_t));
+  if (buf == NULL) {
+    return CID_ERR_MEMORY;
+  }
+  size_t buf_bytes = 0;
+  err = cid_str_to_bytes(cid, buf, len, &buf_bytes);
+  if (err) {
+    free(buf);
+    return err;
+  }
+  err = cid_validate(buf, buf_bytes);
+  free(buf);
+  return err;
+}
+
+// cid-inspect: prints information about a CID
 int main(int argc, char* argv[]) {
   (void)argc;
   (void)argv;
@@ -245,11 +270,11 @@ int main(int argc, char* argv[]) {
     goto free_digest_buf;
   }
 
-  printf("content type: 0x%02lX\n", content_type);
-  printf("version: %lu\n", version);
-  printf("hash func: 0x%02X\n", fn);
-  printf("digest size: %lu\n", digest_size);
-  printf("digest: %s\n", (char*)digest_enc_buf);
+  printf("Content type: 0x%02lX\n", content_type);
+  printf("Version: %lu\n", version);
+  printf("Hash function: 0x%02X\n", fn);
+  printf("Digest size: %lu\n", digest_size);
+  printf("Digest: %s\n", (char*)digest_enc_buf);
 
 free_digest_buf:
   free(digest_enc_buf);

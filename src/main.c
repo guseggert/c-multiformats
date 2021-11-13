@@ -6,6 +6,7 @@
 
 #include "multibase.h"
 
+// converts a multibase-encoded input string into a different multibase encoding
 int main(int argc, char* argv[]) {
   int exit_code = EXIT_SUCCESS;
 

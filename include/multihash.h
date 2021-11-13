@@ -10,12 +10,14 @@ typedef enum {
   MH_ERR_OK = 0,
   MH_ERR_UNKNOWN_HASHFN,
   MH_ERR_UNSUPPORTED_HASHFN,
-  MH_ERR_MEMORY,
   MH_ERR_INVALID_INPUT,
 } mh_err;
 
 static const char* const MH_ERR_STRS[] = {
-    "no error", "unknown hash function", "unsupported hash function", "unable to allocate memory", "invalid input",
+    "no error",
+    "unknown hash function",
+    "unsupported hash function",
+    "invalid multihash",
 };
 
 #define mh_fn_max_code 0x1015
@@ -61,7 +63,7 @@ bool mh_validate(const uint8_t* bytes, size_t bytes_len);
 mh_err mh_digest_len(mh_fn fn, size_t input_len, size_t* digest_len);
 
 /**
- * Compute the @digest of the given length @digest_len of @input of length @input_len bytes, using the @fn hash function.
+ * Computes the @digest of the given length @digest_len of @input of length @input_len bytes, using the @fn hash function.
  */
 mh_err mh_hash(const uint8_t* input, size_t input_len, mh_fn fn, uint8_t* digest, size_t digest_len);
 

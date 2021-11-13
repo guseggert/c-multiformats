@@ -14,9 +14,9 @@ typedef enum {
 
 static const char* const MB_ERR_STRS[] = {
     "no error",
-    "unknown encoding",
-    "invalid input",
-    "buffer size too small",
+    "unknown multibase encoding",
+    "invalid multibase",
+    "multibase buffer size too small",
 };
 
 #define NUM_ENCODINGS 9
@@ -33,7 +33,7 @@ typedef enum {
 } mb_enc;
 
 /**
- * Encode @input_len bytes of @input into a multibase string using @encoding, stored in @result_buf.
+ * Encodes @input_len bytes of @input into a multibase string using @encoding, stored in @result_buf.
  *
  * This always writes at least one byte into @result_buf.
  *
@@ -53,7 +53,7 @@ mb_err mb_encode(const uint8_t* input, size_t input_len, mb_enc encoding, uint8_
 size_t mb_encode_len(const uint8_t* input, size_t input_len, mb_enc encoding);
 
 /**
- * Decode @input_len bytes of @input, stored in @result_buf. See mb_encode().
+ * Decodes @input_len bytes of @input, stored in @result_buf. See mb_encode().
  *
  * @result_buf must be cleared before calling this.
  */
@@ -62,7 +62,7 @@ mb_err mb_decode(const uint8_t* input, size_t input_len, mb_enc* encoding, uint8
 mb_err mb_decode_as_len(const uint8_t* input, size_t input_len, mb_enc encoding);
 
 /**
- * Decode @input_len bytes of @input into @result_buf, assuming it is encoded as @encoding.
+ * Decodes @input_len bytes of @input into @result_buf, assuming it is encoded as @encoding.
  *
  * The @input bytes generally shouldn't contain the multibase prefix when using this.
  *

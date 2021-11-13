@@ -7,10 +7,14 @@
 // 0x7f = 0111 1111
 varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *const val, size_t *const varint_len) {
   size_t len = 0;
+  uint64_t v = 0;
   for (size_t i = 0; i < bytes_len && i < UINT64_MAX_BYTES; i++) {
-    *val |= (bytes[i] & 0x7f) << (7 * i);
+    v |= (bytes[i] & 0x7f) << (7 * i);
     len++;
     if (!(bytes[i] & 0x80)) {
+      if (val != NULL) {
+        *val = v;
+      }
       if (varint_len != NULL) {
         *varint_len = len;
       }

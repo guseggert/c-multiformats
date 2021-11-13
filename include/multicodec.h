@@ -10,16 +10,12 @@ typedef enum {
 
 typedef enum {
   MC_ERR_OK = 0,
-  MC_ERR_NO_VARINT,
   MC_ERR_UNKNOWN_CODEC,
-  MC_ERR_MEMORY,
 } mc_err;
 
 static const char* const MC_ERR_STRS[] = {
     "no error",
-    "invalid varint",
     "unknown codec",
-    "unable to allocate memory",
 };
 
 #endif

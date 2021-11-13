@@ -4,7 +4,7 @@ Its goal is to be a portable implementation that can be reused across as many pr
 
 Current feature list:
 
-* [x] varint
+* [x] [varint](https://github.com/multiformats/unsigned-varint)
 * [ ] [multibase](https://github.com/multiformats/multibase)
   * [x] identity
   * [x] base2
@@ -16,7 +16,7 @@ Current feature list:
   * [x] base64
   * [x] base64url
   * [ ] base64pad
-* [ ] multihash
+* [ ] [multihash](https://github.com/multiformats/multihash)
   * [x] identity
   * [x] sha1
   * [x] sha2-256
@@ -32,9 +32,9 @@ Current feature list:
   * [x] sha2-512-224
   * [x] sha2-512-256
   * [ ] poseidon-bls12_381-a2-fc1
-* [x] cidv0
-* [x] cidv1
-* [ ] multiaddr
+* [x] [cidv0](https://github.com/multiformats/cid#cidv0)
+* [x] [cidv1](https://github.com/multiformats/cid#cidv1)
+* [ ] [multiaddr](https://github.com/multiformats/multiaddr)
 
 This is also run through extensive static and dynamic analysis, including:
 
