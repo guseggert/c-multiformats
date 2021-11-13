@@ -27,7 +27,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   }
 
   // pick an encoding using the first byte
-  mb_enc_t enc = data[0] % NUM_ENCODINGS;
+  mb_enc enc = data[0] % NUM_ENCODINGS;
 
   // temporarily disable base32 until decode is done
   if (enc == MB_ENC_BASE32) {
@@ -43,7 +43,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     exit(1);  // NOLINT
   }
   size_t enc_bytes = 0;
-  mb_err_t enc_err = mb_encode(data, size, enc, enc_buf, enc_buf_len, &enc_bytes);
+  mb_err enc_err = mb_encode(data, size, enc, enc_buf, enc_buf_len, &enc_bytes);
   if (enc_err) {
     printf("error encoding: %s\n", MB_ERR_STRS[enc_err]);
     print_buf("data", data, size);
@@ -61,9 +61,9 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     free(enc_buf);
     exit(1);  // NOLINT
   }
-  mb_enc_t dec_enc = 0;
+  mb_enc dec_enc = 0;
   size_t dec_bytes = 0;
-  mb_err_t dec_err = mb_decode(enc_buf, enc_bytes, &dec_enc, dec_buf, dec_buf_len, &dec_bytes);
+  mb_err dec_err = mb_decode(enc_buf, enc_bytes, &dec_enc, dec_buf, dec_buf_len, &dec_bytes);
   if (dec_err) {
     printf("error decoding: %s\n", MB_ERR_STRS[dec_err]);
     print_buf("data", data, size);

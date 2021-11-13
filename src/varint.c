@@ -5,7 +5,7 @@
 
 // 0x80 = 1000 0000
 // 0x7f = 0111 1111
-varint_err_t varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *const val, size_t *const varint_len) {
+varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *const val, size_t *const varint_len) {
   size_t len = 0;
   for (size_t i = 0; i < bytes_len && i < UINT64_MAX_BYTES; i++) {
     *val |= (bytes[i] & 0x7f) << (7 * i);
@@ -20,7 +20,7 @@ varint_err_t varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *
   return VARINT_ERR_INVALID_INPUT;
 }
 
-varint_err_t uint64_to_varint(uint64_t n, uint8_t *const varint, size_t *const varint_len) {
+varint_err uint64_to_varint(uint64_t n, uint8_t *const varint, size_t *const varint_len) {
   uint64_t a = 0;
   for (size_t i = 0; i < UINT64_MAX_BYTES; i++) {
     a += n >= 0x80;

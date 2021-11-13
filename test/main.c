@@ -17,7 +17,7 @@ static void varint() {
   {
     uint8_t* varint = malloc(sizeof(uint8_t) * UINT64_MAX_BYTES);
     size_t varint_len = 0;
-    varint_err_t err = uint64_to_varint(0, varint, &varint_len);
+    varint_err err = uint64_to_varint(0, varint, &varint_len);
     assert_int_equal(0, err);
     assert_int_equal(1, varint_len);
     uint8_t expected[1] = {0};
@@ -29,7 +29,7 @@ static void varint() {
   {
     uint8_t* varint = malloc(sizeof(uint8_t) * UINT64_MAX_BYTES);
     size_t varint_len = 0;
-    varint_err_t err = uint64_to_varint(UINT64_MAX, varint, &varint_len);
+    varint_err err = uint64_to_varint(UINT64_MAX, varint, &varint_len);
     assert_int_equal(0, err);
     assert_int_equal(10, varint_len);
     uint8_t expected[10] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 1};
@@ -42,7 +42,7 @@ static void varint() {
     uint8_t bytes[3] = {172 /*1010 1100*/, 2 /*0000 0010*/, 129};
     uint64_t val = 0;
     size_t varint_len = 0;
-    varint_err_t err = varint_to_uint64(bytes, 3, &val, &varint_len);
+    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_len);
     assert_int_equal(0, err);
     assert_int_equal(2, varint_len);
     assert_int_equal(300, val);
@@ -53,18 +53,18 @@ static void varint() {
     uint8_t bytes[11] = {172 /*1010 1100*/, 172, 172, 172, 172, 172, 172, 172, 172, 172, 172};
     uint64_t val = 0;
     size_t varint_len = 0;
-    varint_err_t err = varint_to_uint64(bytes, 3, &val, &varint_len);
+    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_len);
     assert_int_equal(VARINT_ERR_INVALID_INPUT, err);
   }
 }
 
-static void mb_test_encode(char* input, size_t input_len, mb_enc_t encoding, char* expected, size_t expected_len, mb_err_t expected_err) {
+static void mb_test_encode(char* input, size_t input_len, mb_enc encoding, char* expected, size_t expected_len, mb_err expected_err) {
   printf("testing encode: input=");
   for (unsigned long i = 0; i < strlen(input); i++) {
     printf("%02hhX", input[i]);
   }
   const char* encoding_name = NULL;
-  mb_err_t enc_name_err = mb_enc_name(encoding, &encoding_name);
+  mb_err enc_name_err = mb_enc_name(encoding, &encoding_name);
   if (enc_name_err) {
     fail_msg("error finding encoding name: %s", MB_ERR_STRS[enc_name_err]);
   }
@@ -74,7 +74,7 @@ static void mb_test_encode(char* input, size_t input_len, mb_enc_t encoding, cha
   size_t res_len = mb_encode_len(in, input_len, encoding);
   uint8_t* res_buf = calloc(res_len, sizeof(uint8_t));
   size_t enc_bytes = 0;
-  mb_err_t err = mb_encode(in, input_len, encoding, res_buf, res_len, &enc_bytes);
+  mb_err err = mb_encode(in, input_len, encoding, res_buf, res_len, &enc_bytes);
 
   printf("encoded (%lu)=", enc_bytes);
   for (unsigned long i = 0; i < res_len; i++) {
@@ -102,13 +102,13 @@ cleanup:
   free(res_buf);
 }
 
-static void mb_test_decode(char* input, size_t input_len, char* expected, size_t expected_len, mb_err_t expected_err) {
+static void mb_test_decode(char* input, size_t input_len, char* expected, size_t expected_len, mb_err expected_err) {
   printf("testing decode: input=%s\n", input);
   uint8_t* in = (uint8_t*)input;
   size_t res_len = mb_decode_len((uint8_t*)input, input_len);
   uint8_t* res_buf = calloc(res_len, sizeof(uint8_t));
   size_t dec_bytes = 0;
-  mb_err_t err = mb_decode(in, input_len, NULL, res_buf, res_len, &dec_bytes);
+  mb_err err = mb_decode(in, input_len, NULL, res_buf, res_len, &dec_bytes);
 
   const char* actual_err_str = MB_ERR_STRS[err];
   const char* expected_err_str = MB_ERR_STRS[expected_err];
@@ -268,9 +268,9 @@ static void mb_decode_base58btc_test() {
   mb_test_decode("z11233QC@", 9, "", 0, MB_ERR_INVALID_INPUT);
 }
 
-static void mb_test_enc_by_name(char* name, mb_enc_t expected_enc, mb_err_t expected_err) {
-  mb_enc_t actual_enc = 0;
-  mb_err_t actual_err = mb_enc_by_name(name, &actual_enc);
+static void mb_test_enc_by_name(char* name, mb_enc expected_enc, mb_err expected_err) {
+  mb_enc actual_enc = 0;
+  mb_err actual_err = mb_enc_by_name(name, &actual_enc);
 
   const char* actual_err_str = MB_ERR_STRS[actual_err];
   const char* expected_err_str = MB_ERR_STRS[expected_err];
@@ -291,7 +291,7 @@ static void mb_enc_by_name_test() {
 static void mh_hash_sha2_256_test() {
   uint8_t* input = (uint8_t*)"asdf";
   size_t result_len = 0;
-  mh_err_t err = mh_digest_len(MH_FN_SHA2_256, 4, &result_len);
+  mh_err err = mh_digest_len(MH_FN_SHA2_256, 4, &result_len);
   if (err) {
     printf("computing digest length: %s\n", MH_ERR_STRS[err]);
     fail();

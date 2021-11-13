@@ -2,18 +2,18 @@
 #define MULTICODEC_H
 
 #define mc_max_code 0x70
-typedef enum mc {
+typedef enum {
   MC_IDENTITY = 0x00,
   MC_CIDV1 = 0x01,
   MC_DAG_PB = 0x70,
-} mc_t;
+} mc;
 
-typedef enum mc_err {
+typedef enum {
   MC_ERR_OK = 0,
   MC_ERR_NO_VARINT,
   MC_ERR_UNKNOWN_CODEC,
   MC_ERR_MEMORY,
-} mc_err_t;
+} mc_err;
 
 static const char* const MC_ERR_STRS[] = {
     "no error",

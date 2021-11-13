@@ -12,7 +12,7 @@ typedef enum {
   MH_ERR_UNSUPPORTED_HASHFN,
   MH_ERR_MEMORY,
   MH_ERR_INVALID_INPUT,
-} mh_err_t;
+} mh_err;
 
 static const char* const MH_ERR_STRS[] = {
     "no error", "unknown hash function", "unsupported hash function", "unable to allocate memory", "invalid input",
@@ -32,14 +32,14 @@ typedef enum {
   MH_FN_SHA2_224 = 0x1013,
   MH_FN_SHA2_512_224,
   MH_FN_SHA2_512_256,
-} mh_fn_t;
+} mh_fn;
 
 /**
  * Extracts the hash function @fn from the multihash @bytes of length @bytes_len.
  *
  * @fn is not set if it is null.
  */
-mh_err_t mh_read_fn(const uint8_t* bytes, size_t bytes_len, mh_fn_t* fn);
+mh_err mh_read_fn(const uint8_t* bytes, size_t bytes_len, mh_fn* fn);
 
 /**
  * Extracts the @digest from the multihash @bytes of length @bytes_len.
@@ -48,7 +48,7 @@ mh_err_t mh_read_fn(const uint8_t* bytes, size_t bytes_len, mh_fn_t* fn);
  *
  * @digest_size and @digest are only set if they are not respectively null.
  */
-mh_err_t mh_read_digest(const uint8_t* bytes, size_t bytes_len, size_t* digest_size, const uint8_t** digest);
+mh_err mh_read_digest(const uint8_t* bytes, size_t bytes_len, size_t* digest_size, const uint8_t** digest);
 
 /**
  * Returns true if the given @bytes of length @bytes_len constitute a valid multihash.
@@ -58,11 +58,11 @@ bool mh_validate(const uint8_t* bytes, size_t bytes_len);
 /**
  * Computes the digest length @digest_len for the given hash function @fn given the input length @input_len.
  */
-mh_err_t mh_digest_len(mh_fn_t fn, size_t input_len, size_t* digest_len);
+mh_err mh_digest_len(mh_fn fn, size_t input_len, size_t* digest_len);
 
 /**
  * Compute the @digest of the given length @digest_len of @input of length @input_len bytes, using the @fn hash function.
  */
-mh_err_t mh_hash(const uint8_t* input, size_t input_len, mh_fn_t fn, uint8_t* digest, size_t digest_len);
+mh_err mh_hash(const uint8_t* input, size_t input_len, mh_fn fn, uint8_t* digest, size_t digest_len);
 
 #endif

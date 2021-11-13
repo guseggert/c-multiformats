@@ -4,12 +4,12 @@
 #ifndef VARINT_H
 #define VARINT_H
 
-typedef enum varint_err {
+typedef enum {
   VARINT_ERR_OK = 0,
   VARINT_ERR_INVALID_INPUT,
   VARINT_ERR_INPUT_TOO_BIG,
   VARINT_ERR_BUF_SIZE,
-} varint_err_t;
+} varint_err;
 
 static const char *const VARINT_ERR_STRS[] = {
     "no error",
@@ -25,7 +25,7 @@ static const char *const VARINT_ERR_STRS[] = {
  *
  * The @varint buffer must be long enough to hold the varint. Generally the buffer should be of size @UINT64_MAX_BYTES.
  */
-varint_err_t uint64_to_varint(uint64_t n, uint8_t *varint, size_t *varint_len);
+varint_err uint64_to_varint(uint64_t n, uint8_t *varint, size_t *varint_len);
 
 /**
  * Convert a varint at the front of @bytes to a uint64 @val. This can be used to read either an exact varint,
@@ -34,6 +34,6 @@ varint_err_t uint64_to_varint(uint64_t n, uint8_t *varint, size_t *varint_len);
  *
  * An error is returned if a valid uint64 varint cannot be read from @bytes within @bytes_len bytes.
  */
-varint_err_t varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *val, size_t *varint_len);
+varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_len, uint64_t *val, size_t *varint_len);
 
 #endif

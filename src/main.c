@@ -18,8 +18,8 @@ int main(int argc, char* argv[]) {
   char* enc_str = argv[1];
   char* input = argv[2];
 
-  mb_enc_t enc = 0;
-  mb_err_t err = mb_enc_by_name(enc_str, &enc);
+  mb_enc enc = 0;
+  mb_err err = mb_enc_by_name(enc_str, &enc);
   if (err) {
     printf("getting encoding '%s': %s\n", enc_str, MB_ERR_STRS[err]);
     exit_code = 1;
@@ -30,9 +30,9 @@ int main(int argc, char* argv[]) {
   size_t str_len = strlen(input);
   size_t dec_len = mb_decode_len((uint8_t*)input, str_len);
   uint8_t* dec_buf = calloc(dec_len, sizeof(uint8_t));
-  mb_enc_t dec_enc = 0;
+  mb_enc dec_enc = 0;
   size_t dec_bytes = 0;
-  mb_err_t dec_err = mb_decode((uint8_t*)input, str_len, &dec_enc, dec_buf, dec_len, &dec_bytes);
+  mb_err dec_err = mb_decode((uint8_t*)input, str_len, &dec_enc, dec_buf, dec_len, &dec_bytes);
   if (dec_err) {
     printf("decoding: %s\n", MB_ERR_STRS[dec_err]);
     exit_code = 1;
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   size_t enc_len = mb_encode_len(dec_buf, dec_len, enc);
   uint8_t* enc_buf = calloc(enc_len, sizeof(uint8_t));
   size_t enc_bytes = 0;
-  mb_err_t enc_err = mb_encode(dec_buf, dec_len, enc, enc_buf, enc_len, &enc_bytes);
+  mb_err enc_err = mb_encode(dec_buf, dec_len, enc, enc_buf, enc_len, &enc_bytes);
   if (enc_err) {
     printf("encoding: %s\n", MB_ERR_STRS[enc_err]);
     exit_code = 1;
