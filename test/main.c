@@ -140,23 +140,6 @@ static void mb_decode_base2_test() {
   mb_test_decode("001111001011001010111001100100000011011010110000101101110011010010010000000100001", 81, "yes mani !", 10, 0);
 }
 
-/* static void mb_encode_base32_test() { mb_test_encode("\x00\x00yes mani !", 12, MB_ENC_BASE32UPPER, "BAAAHSZLTEBWWC3TJEAQQ", 21, 0); } */
-/* static void mb_decode_base32_test() { */
-/*   /\* char* input = "yes mani !"; *\/ */
-/*   //  char* input = "BAAAHSZLTEBWWC3TJEAQQ"; */
-/*   //  char* input = "\x00\x00yes mani !"; */
-/*   char* input = "BPFSXGIDNMFXGSIBB"; */
-/*   unsigned long l = 21; */
-
-/*   size_t result_len = mb_decode_len((uint8_t*)input, l); */
-/*   uint8_t* result = calloc(result_len, sizeof(uint8_t)); */
-/*   mb_err_t err = mb_decode((uint8_t*)input, l, NULL, result); */
-/*   // result is not a string, we need to add null terminator to make it one */
-
-/*   assert_string_equal("yes mani !", result); */
-
-/*   free(result); */
-/* } */
 static void mb_encode_base64_test() {
   mb_test_encode("yes mani !", 10, MB_ENC_BASE64, "meWVzIG1hbmkgIQ", 15, 0);
   mb_test_encode("\x00yes mani !", 11, MB_ENC_BASE64, "mAHllcyBtYW5pICE", 16, 0);
@@ -305,21 +288,31 @@ static void mb_enc_by_name_test() {
   mb_test_enc_by_name("foo", 0, MB_ERR_UNKNOWN_ENC);
 }
 
-static void mh_encode_sha2_256_test() {
+static void mh_hash_sha2_256_test() {
   uint8_t* input = (uint8_t*)"asdf";
-  uint8_t* result = NULL;
   size_t result_len = 0;
-  mh_err_t err = mh_hash(input, 4, MH_ENC_SHA2_256, &result, &result_len);
+  mh_err_t err = mh_digest_len(MH_FN_SHA2_256, 4, &result_len);
   if (err) {
-    printf("error!\n");
+    printf("computing digest length: %s\n", MH_ERR_STRS[err]);
     fail();
   }
-  printf("hash: '");
+  uint8_t* digest = calloc(result_len, sizeof(uint8_t));
+  if (digest == NULL) {
+    printf("mem error allocating digest\n");
+    fail();
+  }
+  err = mh_hash(input, 4, MH_FN_SHA2_256, digest, result_len);
+  if (err) {
+    printf("computing digest: %s\n", MH_ERR_STRS[err]);
+    free(digest);
+    fail();
+  }
+  printf("digest: '");
   for (size_t i = 0; i < result_len; i++) {
-    printf("%hhx", result[i]);
+    printf("%hhx", digest[i]);
   }
   printf("'\n");
-  free(result);
+  free(digest);
 }
 
 int main(void) {
@@ -342,7 +335,7 @@ int main(void) {
       cmocka_unit_test(mb_encode_base64_test),
       cmocka_unit_test(mb_decode_base64_test),
       cmocka_unit_test(mb_enc_by_name_test),
-      cmocka_unit_test(mh_encode_sha2_256_test),
+      cmocka_unit_test(mh_hash_sha2_256_test),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

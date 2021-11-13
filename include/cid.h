@@ -1,21 +1,23 @@
 #ifndef CID_H
 #define CID_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "multihash.h"
 
-typedef struct {
-  uint64_t version;
-  uint64_t content_type;
-  mh_t* multihash;
-} cid_t;
+typedef enum cid_codec {
+  CID_CODEC_RAW = 0x55,
+  CID_CODEC_DAG_PROTOBUF = 0x70,
+  CID_CODEC_DAG_CBOR = 0x71,
+  CID_CODEC_LIBP2P_KEY = 0x72,
+} cid_codec_t;
 
 typedef enum cid_err {
   CID_ERR_OK = 0,
   CID_ERR_INVALID_INPUT,
-  CID_UNSUPPORTED_VERSION,
+  CID_ERR_UNSUPPORTED_VERSION,
   CID_ERR_MEMORY,
 } cid_err_t;
 
@@ -27,19 +29,35 @@ static const char* const CID_ERR_STRS[] = {
 };
 
 /**
- * Parse a byte-encoded CID @bytes of length @bytes_len into @cid.
+ * Read the CID @version from @cid bytes of size @cid_len.
  */
-cid_err_t cid_decode_bytes(const uint8_t* bytes, size_t bytes_len, cid_t** cid);
+cid_err_t cid_read_version(const uint8_t* cid, size_t cid_len, uint64_t* version);
 
 /**
- * Parse an ASCII/UTF8-encoded CID @str into @cid. The raw decoded CID bytes
- * will be set to @cid_bytes, if it is not null. If @cid_bytes are set, then
- * the memory must freed by the caller.
- *
- * @str must be a proper C string with a null terminator.
+ * Read the content type @content_type from @cid bytes of size @cid_len.
  */
-cid_err_t cid_decode_str(const char* str, cid_t** cid);
+cid_err_t cid_read_content_type(const uint8_t* cid, size_t cid_len, uint64_t* content_type);
 
-void cid_free(cid_t* cid);
+/**
+ * Read the @multihash bytes and length @multihash_len from @cid bytes of size @cid_len.
+ *
+ * No heap memory is allocated, @multihash points to an element of @cid.
+ */
+cid_err_t cid_read_multihash(const uint8_t* cid, size_t cid_len, const uint8_t** multihash, size_t* multihash_len);
+
+/**
+ * Compute the length @len in bytes to convert the CID string @cid to CID bytes.
+ *
+ * Call this before cid_str_to_bytes() to compute the buffer size to allocate.
+ */
+cid_err_t cid_str_to_bytes_len(const char* cid, size_t* len);
+
+/**
+ * Convert a null-terminated ASCII/UTF8-encoded CID string @cid to CID bytes,
+ * writing @bytes_len bytes to buffer @buf of length @buf_len bytes.
+ *
+ * The @buf must be cleared before calling this.
+ */
+cid_err_t cid_str_to_bytes(const char* cid, uint8_t* buf, size_t buf_len, size_t* bytes_len);
 
 #endif
