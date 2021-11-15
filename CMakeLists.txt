@@ -23,6 +23,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   string(APPEND CMAKE_C_FLAGS_RELEASE " -fanalyzer")
 endif()
 
+find_program(iwyu include-what-you-use)
+if(iwyu)
+  set(CMAKE_C_INCLUDE_WHAT_YOU_USE "${iwyu};-Xiwyu;--no_fwd_decls")
+endif()
+
 add_library(
   multibase
   SHARED

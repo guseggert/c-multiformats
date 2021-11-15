@@ -49,6 +49,9 @@ This is also run through extensive static and dynamic analysis, including:
   - CMake
   - cmocka
   - Clang
+  - include-what-you-use
+  - clang-tidy
+  - clang-format
 
 ## Building
 Clang is recommended but GCC can also be used.

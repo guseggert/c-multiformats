@@ -1,11 +1,8 @@
 #ifndef CID_H
 #define CID_H
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include "multihash.h"
 
 typedef enum {
   CID_CODEC_RAW = 0x55,

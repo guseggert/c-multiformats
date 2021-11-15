@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/types.h>
 
 typedef enum {
   MB_ERR_OK = 0,
