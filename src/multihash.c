@@ -43,7 +43,7 @@ static enum gcry_md_algos fn_to_gcrypt_algo(mh_fn fn) {
   }
 }
 
-static mh_err murmur3_x86_64(const uint8_t* const input, size_t input_len, uint8_t* const digest) {
+static mh_err murmur3_x64_64(const uint8_t* const input, size_t input_len, uint8_t* const digest) {
   // This is defined as the first half of x64-128.
   //
   // Unfortunately to use this library we must allocate a 16-byte buffer and then copy the first
@@ -84,7 +84,7 @@ mh_err mh_digest(const uint8_t* const input, size_t input_len, mh_fn fn, uint8_t
       memcpy(digest, input, digest_len);
       return MH_ERR_OK;
     case MH_FN_MURMUR3_X64_64:
-      return murmur3_x86_64(input, input_len, digest);
+      return murmur3_x64_64(input, input_len, digest);
     case MH_FN_SHA2_256_TRUNC254_PADDED:
       return sha2_256_trunc254_padded(input, input_len, digest);
     default: {
@@ -232,7 +232,7 @@ typedef struct {
   mh_fn code;
 } mh_func;
 
-// these correlate to the mh_fn enum 
+// these correlate to the mh_fn enum
 static const mh_func codes[MH_NUM_FNS] = {
     {.name = "identity", .code = MH_FN_IDENTITY},
     {.name = "sha1", .code = MH_FN_SHA1},
