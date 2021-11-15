@@ -28,11 +28,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // pick an encoding using the first byte
   mb_enc enc = data[0] % NUM_ENCODINGS;
 
-  // temporarily disable base32 until decode is done
-  if (enc == MB_ENC_BASE32) {
-    return 0;
-  }
-
   // encode the data
   size_t enc_buf_len = mb_encode_len(data, size, enc);
   uint8_t* enc_buf = calloc(enc_buf_len, sizeof(uint8_t));
