@@ -154,7 +154,7 @@ endif()
 
 add_test(NAME test COMMAND run-tests-asan)
 
-add_executable(mb ./src/main.c)
+add_executable(mb ./src/multibase.c)
 target_link_libraries(mb multibase multihash varint)
 target_link_libraries(mb PkgConfig::deps)
 target_compile_options(mb PRIVATE -Werror)
