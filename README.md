@@ -27,7 +27,7 @@ Current feature list:
   * [x] sha3-224
   * [x] sha2-384
   * [x] murmur3-x64-64
-  * [ ] sha2-256-trunc254-padded
+  * [x] sha2-256-trunc254-padded
   * [x] sha2-224
   * [x] sha2-512-224
   * [x] sha2-512-256

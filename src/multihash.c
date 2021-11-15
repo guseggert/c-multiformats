@@ -52,7 +52,7 @@ static mh_err murmur3_x86_64(const uint8_t* const input, size_t input_len, uint8
   if (buf == NULL) {
     return MH_ERR_MEMORY;
   }
-  
+
   MurmurHash3_x64_128(input, (int)input_len, 0, buf);
 
   // be careful to keep this agnostic to arch endianness
@@ -70,37 +70,53 @@ static mh_err murmur3_x86_64(const uint8_t* const input, size_t input_len, uint8
   return MH_ERR_OK;
 }
 
+static mh_err sha2_256_trunc254_padded(const uint8_t* const input, size_t input_len, uint8_t* const digest) {
+  //  SHA2-256 with the two most significant bits from the last byte zeroed (as via a mask with 0x3f)
+  unsigned int digest_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
+  gcry_md_hash_buffer(GCRY_MD_SHA256, digest, input, input_len);
+  digest[digest_len - 1] &= 0x3f;
+  return MH_ERR_OK;
+}
+
 mh_err mh_digest(const uint8_t* const input, size_t input_len, mh_fn fn, uint8_t* const digest, size_t digest_len) {
-  if (fn == MH_FN_IDENTITY) {
-    memcpy(digest, input, digest_len);
-    return MH_ERR_OK;
+  switch (fn) {
+    case MH_FN_IDENTITY:
+      memcpy(digest, input, digest_len);
+      return MH_ERR_OK;
+    case MH_FN_MURMUR3_X64_64:
+      return murmur3_x86_64(input, input_len, digest);
+    case MH_FN_SHA2_256_TRUNC254_PADDED:
+      return sha2_256_trunc254_padded(input, input_len, digest);
+    default: {
+      enum gcry_md_algos algo = fn_to_gcrypt_algo(fn);
+      if (algo == 0) {
+        return MH_ERR_UNSUPPORTED_HASHFN;
+      }
+      return mh_digest_gcrypt(algo, input, input_len, digest);
+    }
   }
-  if (fn == MH_FN_MURMUR3_X64_64) {
-    return murmur3_x86_64(input, input_len, digest);
-  }
-  enum gcry_md_algos algo = fn_to_gcrypt_algo(fn);
-  if (algo == 0) {
-    return MH_ERR_UNSUPPORTED_HASHFN;
-  }
-  return mh_digest_gcrypt(algo, input, input_len, digest);
 }
 
 mh_err mh_digest_len(mh_fn fn, size_t input_len, size_t* const digest_len) {
-  if (fn == MH_FN_IDENTITY) {
-    *digest_len = input_len;
-    return MH_ERR_OK;
+  switch (fn) {
+    case MH_FN_IDENTITY:
+      *digest_len = input_len;
+      return MH_ERR_OK;
+    case MH_FN_MURMUR3_X64_64:
+      *digest_len = 8;
+      return MH_ERR_OK;
+    case MH_FN_SHA2_256_TRUNC254_PADDED:
+      *digest_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
+      return MH_ERR_OK;
+    default: {
+      enum gcry_md_algos algo = fn_to_gcrypt_algo(fn);
+      if (algo == 0) {
+        return MH_ERR_UNSUPPORTED_HASHFN;
+      }
+      *digest_len = gcry_md_get_algo_dlen(algo);
+      return MH_ERR_OK;
+    }
   }
-  if (fn == MH_FN_MURMUR3_X64_64) {
-    *digest_len = 8;
-    return MH_ERR_OK;
-  }
-  enum gcry_md_algos algo = fn_to_gcrypt_algo(fn);
-  if (algo == 0) {
-    return MH_ERR_UNSUPPORTED_HASHFN;
-  }
-
-  *digest_len = gcry_md_get_algo_dlen(algo);
-  return MH_ERR_OK;
 }
 
 mh_err mh_encode_len(mh_fn fn, size_t input_len, size_t* encode_len) {
@@ -216,7 +232,7 @@ typedef struct {
   mh_fn code;
 } mh_func;
 
-// these correlate to the mh_fn enum
+// these correlate to the mh_fn enum 
 static const mh_func codes[MH_NUM_FNS] = {
     {.name = "identity", .code = MH_FN_IDENTITY},
     {.name = "sha1", .code = MH_FN_SHA1},
@@ -228,6 +244,7 @@ static const mh_func codes[MH_NUM_FNS] = {
     {.name = "sha3-224", .code = MH_FN_SHA3_224},
     {.name = "sha2-384", .code = MH_FN_SHA2_384},
     {.name = "murmur3-x64-64", .code = MH_FN_MURMUR3_X64_64},
+    {.name = "sha2-256-trunc254-padded", .code = MH_FN_SHA2_256_TRUNC254_PADDED},
     {.name = "sha2-224", .code = MH_FN_SHA2_224},
     {.name = "sha2-512-224", .code = MH_FN_SHA2_512_224},
     {.name = "sha2-512-256", .code = MH_FN_SHA2_512_256},

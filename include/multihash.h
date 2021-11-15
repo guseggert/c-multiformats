@@ -22,7 +22,7 @@ static const char* const MH_ERR_STRS[] = {
     "unable to allocate memory",
 };
 
-#define MH_NUM_FNS 13
+#define MH_NUM_FNS 14
 typedef enum {
   MH_FN_IDENTITY = 0x00,
   MH_FN_SHA1 = 0x11,
@@ -34,6 +34,7 @@ typedef enum {
   MH_FN_SHA3_224,
   MH_FN_SHA2_384 = 0x20,
   MH_FN_MURMUR3_X64_64 = 0x22,
+  MH_FN_SHA2_256_TRUNC254_PADDED = 0x1012,
   MH_FN_SHA2_224 = 0x1013,
   MH_FN_SHA2_512_224,
   MH_FN_SHA2_512_256,
