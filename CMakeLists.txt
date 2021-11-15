@@ -32,7 +32,7 @@ add_library(
 set_target_properties(multibase PROPERTIES VERSION 1)
 set_target_properties(multibase PROPERTIES SOVERSION 1)
 set_target_properties(multibase PROPERTIES PUBLIC_HEADER include/multibase.h)
-target_include_directories(multibase PRIVATE include)
+target_include_directories(multibase PUBLIC include)
 target_compile_options(multibase PRIVATE -Werror)
 
 add_library(
@@ -44,10 +44,10 @@ add_library(
 set_target_properties(multihash PROPERTIES VERSION 1)
 set_target_properties(multihash PROPERTIES SOVERSION 1)
 set_target_properties(multihash PROPERTIES PUBLIC_HEADER include/multihash.h)
-target_include_directories(multihash PRIVATE include)
+target_include_directories(multihash PUBLIC include deps/murmur3)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(deps REQUIRED IMPORTED_TARGET libgcrypt)
-target_link_libraries(multihash PkgConfig::deps)
+target_link_libraries(multihash PUBLIC multibase varint murmur3 PkgConfig::deps)
 target_compile_options(multihash PRIVATE -Werror)
 
 add_library(
@@ -157,10 +157,12 @@ add_test(NAME test COMMAND run-tests-asan)
 add_executable(mb ./src/main.c)
 target_link_libraries(mb multibase multihash varint)
 target_link_libraries(mb PkgConfig::deps)
-target_include_directories(mb PRIVATE include)
 target_compile_options(mb PRIVATE -Werror)
 
 add_executable(cid-inspect ./src/cid.c)
 target_link_libraries(cid-inspect multibase multihash varint)
 target_link_libraries(cid-inspect PkgConfig::deps)
 target_include_directories(cid-inspect PRIVATE include)
+
+add_executable(mh ./src/multihash.c)
+target_link_libraries(mh multihash PkgConfig::deps)

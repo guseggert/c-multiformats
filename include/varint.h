@@ -24,6 +24,9 @@ static const char *const VARINT_ERR_STRS[] = {
  * Converts the uint64 @n into a varint and stores @varint_len bytes in @varint.
  *
  * The @varint buffer must be long enough to hold the varint. Generally the buffer should be of size @UINT64_MAX_BYTES.
+ *
+ * Both @varint and @varint_len are respectively set only if they are not NULL, otherwise they are ignored.
+ * So you can e.g. pre-compute the length of a varint without the varint by passing NULL for @varint.
  */
 varint_err uint64_to_varint(uint64_t n, uint8_t *varint, size_t *varint_len);
 

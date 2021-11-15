@@ -11,9 +11,9 @@
 #include "test_utils.h"
 
 static void mh_hash_sha2_256_test() {
-  uint8_t* input = (uint8_t*)"asdf";
+  uint8_t* input = (uint8_t*)"hello, world";
   size_t result_len = 0;
-  mh_err err = mh_digest_len(MH_FN_SHA2_256, 4, &result_len);
+  mh_err err = mh_digest_len(MH_FN_MURMUR3_X64_64, 13, &result_len);
   if (err) {
     printf("computing digest length: %s\n", MH_ERR_STRS[err]);
     fail();
@@ -23,7 +23,7 @@ static void mh_hash_sha2_256_test() {
     printf("mem error allocating digest\n");
     fail();
   }
-  err = mh_hash(input, 4, MH_FN_SHA2_256, digest, result_len);
+  err = mh_digest(input, 13, MH_FN_MURMUR3_X64_64, digest, result_len);
   if (err) {
     printf("computing digest: %s\n", MH_ERR_STRS[err]);
     free(digest);

@@ -4,8 +4,8 @@ Its goal is to be a portable implementation that can be reused across as many pr
 
 Current feature list:
 
-* [x] [varint](https://github.com/multiformats/unsigned-varint)
-* [ ] [multibase](https://github.com/multiformats/multibase)
+* [x] uint64 [varint](https://github.com/multiformats/unsigned-varint)
+* [x] [multibase](https://github.com/multiformats/multibase)
   * [x] identity
   * [x] base2
   * [x] base16
@@ -16,7 +16,7 @@ Current feature list:
   * [x] base64
   * [x] base64url
   * [ ] base64pad
-* [ ] [multihash](https://github.com/multiformats/multihash)
+* [x] [multihash](https://github.com/multiformats/multihash)
   * [x] identity
   * [x] sha1
   * [x] sha2-256
@@ -26,7 +26,7 @@ Current feature list:
   * [x] sha3-256
   * [x] sha3-224
   * [x] sha2-384
-  * [ ] murmur3-x86-64
+  * [x] murmur3-x64-64
   * [ ] sha2-256-trunc254-padded
   * [x] sha2-224
   * [x] sha2-512-224

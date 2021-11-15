@@ -13,4 +13,4 @@ Checks: >
 
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: '^((?!murmur3).)*$'

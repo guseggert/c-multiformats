@@ -179,8 +179,6 @@ cid_err cid_str_validate(const char* const cid) {
 
 // cid-inspect: prints information about a CID
 int main(int argc, char* argv[]) {
-  (void)argc;
-  (void)argv;
   int exit_code = 0;
 
   if (argc != 2) {
@@ -272,7 +270,7 @@ int main(int argc, char* argv[]) {
 
   printf("Content type: 0x%02lX\n", content_type);
   printf("Version: %lu\n", version);
-  printf("Hash function: 0x%02X\n", fn);
+  printf("Hash function: 0x%02X\n", fn); 
   printf("Digest size: %lu\n", digest_size);
   printf("Digest: %s\n", (char*)digest_enc_buf);
 

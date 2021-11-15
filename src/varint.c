@@ -28,10 +28,16 @@ varint_err uint64_to_varint(uint64_t n, uint8_t *const varint, size_t *const var
   uint64_t a = 0;
   for (size_t i = 0; i < UINT64_MAX_BYTES; i++) {
     a += n >= 0x80;
-    varint[i] = n | 0x80;
+    if (varint != NULL) {
+      varint[i] = n | 0x80;
+    }
     n >>= 7;
   }
-  varint[a] ^= 0x80;
-  *varint_len = a + 1;
+  if (varint != NULL) {
+    varint[a] ^= 0x80;
+  }
+  if (varint_len != NULL) {
+    *varint_len = a + 1;
+  }
   return VARINT_ERR_OK;
 }

@@ -11,6 +11,7 @@ typedef enum {
   MH_ERR_UNKNOWN_HASHFN,
   MH_ERR_UNSUPPORTED_HASHFN,
   MH_ERR_INVALID_INPUT,
+  MH_ERR_MEMORY,
 } mh_err;
 
 static const char* const MH_ERR_STRS[] = {
@@ -18,9 +19,10 @@ static const char* const MH_ERR_STRS[] = {
     "unknown hash function",
     "unsupported hash function",
     "invalid multihash",
+    "unable to allocate memory",
 };
 
-#define mh_fn_max_code 0x1015
+#define MH_NUM_FNS 13
 typedef enum {
   MH_FN_IDENTITY = 0x00,
   MH_FN_SHA1 = 0x11,
@@ -31,6 +33,7 @@ typedef enum {
   MH_FN_SHA3_256,
   MH_FN_SHA3_224,
   MH_FN_SHA2_384 = 0x20,
+  MH_FN_MURMUR3_X64_64 = 0x22,
   MH_FN_SHA2_224 = 0x1013,
   MH_FN_SHA2_512_224,
   MH_FN_SHA2_512_256,
@@ -65,6 +68,16 @@ mh_err mh_digest_len(mh_fn fn, size_t input_len, size_t* digest_len);
 /**
  * Computes the @digest of the given length @digest_len of @input of length @input_len bytes, using the @fn hash function.
  */
-mh_err mh_hash(const uint8_t* input, size_t input_len, mh_fn fn, uint8_t* digest, size_t digest_len);
+mh_err mh_digest(const uint8_t* input, size_t input_len, mh_fn fn, uint8_t* digest, size_t digest_len);
 
+/**
+ * Computes the length @encode_len of the mutlihash encoding for the given hash function @fn and @input_len.
+ */
+mh_err mh_encode_len(mh_fn fn, size_t input_len, size_t* encode_len);
+
+/**
+ * Computes the digest of the given @input of length @input_len bytes, using the @fn hash function,
+ * and encodes the result as a multihash in @bytes of given length @bytes_len.
+ */
+mh_err mh_encode(const uint8_t* input, size_t input_len, mh_fn fn, uint8_t* bytes, size_t bytes_len);
 #endif
