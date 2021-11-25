@@ -19,12 +19,12 @@ void print_buf(char* name, const uint8_t* buf, size_t len) {
   printf("\n");
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  // require at least 1 byte
+int fuzz_multibase(const uint8_t* data, size_t size) {
+  // require at least two bytes
   if (size < 2) {
     return 0;
   }
-
+  
   // pick an encoding using the first byte
   mb_enc enc = data[0] % NUM_ENCODINGS;
 
@@ -101,7 +101,27 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
   }
 
+  printf("done testing mb\n");
+
   free(enc_buf);
   free(dec_buf);
   return 0;
+}
+
+
+
+typedef int (*const fuzz_func)(const uint8_t* data, size_t size);
+#define NUM_COMPONENTS 1
+static fuzz_func component_fns[NUM_COMPONENTS] = {
+    &fuzz_multibase,
+};
+int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  // require at least 2 bytes
+  if (size < 2) {
+    return 0;
+  }
+
+  // pick a component to test
+  size_t comp = data[0] % NUM_COMPONENTS;
+  return component_fns[comp](data + 1, size - 1);
 }
