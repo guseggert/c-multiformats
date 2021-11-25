@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "multibase.h"
-#include "multicodec.h"
 #include "multihash.h"
 #include "varint.h"
 
@@ -36,7 +35,7 @@ static cid_err cid_read_content_type_varint(const uint8_t* const bytes, size_t b
                                             size_t* bytes_read) {
   if (version == 0) {
     if (content_type != NULL) {
-      *content_type = MC_DAG_PB;
+      *content_type = CID_CODEC_DAG_PROTOBUF;
     }
     if (bytes_read != NULL) {
       *bytes_read = 0;
@@ -175,109 +174,4 @@ cid_err cid_str_validate(const char* const cid) {
   err = cid_validate(buf, buf_bytes);
   free(buf);
   return err;
-}
-
-// cid-inspect: prints information about a CID
-int main(int argc, char* argv[]) {
-  int exit_code = 0;
-
-  if (argc != 2) {
-    printf("usage: %s <cid>\n", argv[0]);
-    return 1;
-  }
-  char* cid_str = argv[1];
-  // bafykbzacecexdyefm2dztcz7wyj7e4mregekb7d76isvk4cviosljaih6xwea
-  // QmbwdMkf5NLZFDT8j8fEeS3rxihM55wsz57sfLr3K1AvxS
-  size_t buf_len = 0;
-  cid_err err = cid_str_to_bytes_len(cid_str, &buf_len);
-  if (err) {
-    printf("%s\n", CID_ERR_STRS[err]);
-    exit_code = 1;
-    goto exit;
-  }
-  uint8_t* buf = calloc(buf_len, sizeof(uint8_t));
-  if (buf == NULL) {
-    printf("mem error\n");
-    exit_code = 1;
-    goto exit;
-  }
-  size_t bytes_len = 0;
-  err = cid_str_to_bytes(cid_str, buf, buf_len, &bytes_len);
-  if (err) {
-    printf("converting CID to bytes: %s\n", CID_ERR_STRS[err]);
-    exit_code = 1;
-    goto free_buf;
-  }
-
-  uint64_t version = 0;
-  err = cid_read_version(buf, bytes_len, &version);
-  if (err) {
-    printf("reading version: %s\n", CID_ERR_STRS[err]);
-    exit_code = 1;
-    goto free_buf;
-  }
-
-  uint64_t content_type = 0;
-  err = cid_read_content_type(buf, bytes_len, &content_type);
-  if (err) {
-    printf("reading content type: %s\n", CID_ERR_STRS[err]);
-    exit_code = 1;
-    goto free_buf;
-  }
-
-  const uint8_t* multihash = NULL;
-  size_t multihash_len = 0;
-  err = cid_read_multihash(buf, bytes_len, &multihash, &multihash_len);
-  if (err) {
-    printf("reading multihash: %s\n", CID_ERR_STRS[err]);
-    exit_code = 1;
-    goto free_buf;
-  }
-
-  const uint8_t* digest = NULL;
-  size_t digest_size = 0;
-  mh_err mh_err = mh_read_digest(multihash, multihash_len, &digest_size, &digest);
-  if (mh_err) {
-    printf("error reading digest: %s\n", MH_ERR_STRS[mh_err]);
-    exit_code = 1;
-    goto free_buf;
-  }
-
-  size_t digest_enc_buf_len = mb_encode_len(digest, digest_size, MB_ENC_BASE16UPPER);
-  uint8_t* digest_enc_buf = calloc(digest_enc_buf_len + 1, sizeof(uint8_t));  // add null terminator
-  if (digest_enc_buf == NULL) {
-    printf("mem error\n");
-    exit_code = 1;
-    goto exit;
-  }
-  digest_enc_buf[digest_enc_buf_len] = '\0';
-
-  size_t digest_enc_buf_bytes = 0;
-  mb_err mb_err = mb_encode(digest, digest_size, MB_ENC_BASE16UPPER, digest_enc_buf, digest_enc_buf_len, &digest_enc_buf_bytes);
-  if (mb_err) {
-    printf("error encoding digest: %s\n", MB_ERR_STRS[mb_err]);
-    exit_code = 1;
-    goto free_digest_buf;
-  }
-
-  mh_fn fn = 0;
-  mh_err = mh_read_fn(multihash, multihash_len, &fn);
-  if (mh_err) {
-    printf("error reading multihash function: %s\n", MH_ERR_STRS[mh_err]);
-    exit_code = 1;
-    goto free_digest_buf;
-  }
-
-  printf("Content type: 0x%02lX\n", content_type);
-  printf("Version: %lu\n", version);
-  printf("Hash function: 0x%02X\n", fn); 
-  printf("Digest size: %lu\n", digest_size);
-  printf("Digest: %s\n", (char*)digest_enc_buf);
-
-free_digest_buf:
-  free(digest_enc_buf);
-free_buf:
-  free(buf);
-exit:
-  return exit_code;
 }

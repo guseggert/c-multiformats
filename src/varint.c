@@ -1,7 +1,11 @@
 #include "varint.h"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "multibase.h"
 
 // 0x80 = 1000 0000
 // 0x7f = 0111 1111

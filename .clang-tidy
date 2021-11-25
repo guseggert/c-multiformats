@@ -8,6 +8,7 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -hicpp-signed-bitwise,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -bugprone-easily-swappable-parameters,
   -llvm-header-guard,
   -modernize-deprecated-headers,
 

@@ -235,6 +235,7 @@ static void mb_decode_base58btc_test() {
 static void mb_test_enc_by_name(char* name, mb_enc expected_enc, mb_err expected_err) {
   mb_enc actual_enc = 0;
   mb_err actual_err = mb_enc_by_name(name, &actual_enc);
+
   const char* actual_err_str = MB_ERR_STRS[actual_err];
   const char* expected_err_str = MB_ERR_STRS[expected_err];
   assert_string_equal(expected_err_str, actual_err_str);

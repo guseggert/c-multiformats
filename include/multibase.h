@@ -39,7 +39,7 @@ typedef enum {
  * The number of bytes written are set in @written.
  *
  * @written is not necessarily the same as @result_buf_len, because in certain base encodings we
- * can't accurately know the result size a priori.
+ * can't precisely know the result size a priori.
  */
 mb_err mb_encode(const uint8_t* input, size_t input_len, mb_enc encoding, uint8_t* result_buf, size_t result_buf_len, size_t* written);
 
@@ -58,23 +58,21 @@ size_t mb_encode_len(const uint8_t* input, size_t input_len, mb_enc encoding);
  */
 mb_err mb_decode(const uint8_t* input, size_t input_len, mb_enc* encoding, uint8_t* result_buf, size_t result_buf_len, size_t* written);
 
-mb_err mb_decode_as_len(const uint8_t* input, size_t input_len, mb_enc encoding);
-
-/**
- * Decodes @input_len bytes of @input into @result_buf, assuming it is encoded as @encoding.
- *
- * The @input bytes generally shouldn't contain the multibase prefix when using this.
- *
- * @result_buf must be cleared before calling this.
- */
-mb_err mb_decode_as(const uint8_t* input, size_t input_len, mb_enc encoding, uint8_t* result_buf, size_t result_buf_len, size_t* written);
-
 /**
  * Returns the recommended buffer size for decoding @input, so that the caller can allocate memory for decoding.
  *
  * @see mb_encode_len()
  */
 size_t mb_decode_len(const uint8_t* input, size_t input_len);
+
+/**
+ * Decodes @input_len bytes of @input into @result_buf, assuming it is encoded as @encoding without the multibase prefix.
+ *
+ * @result_buf must be cleared before calling this.
+ */
+mb_err mb_decode_as(const uint8_t* input, size_t input_len, mb_enc encoding, uint8_t* result_buf, size_t result_buf_len, size_t* written);
+
+mb_err mb_decode_as_len(const uint8_t* input, size_t input_len, mb_enc encoding);
 
 /**
  * Sets @enc to the encoding matching @name.

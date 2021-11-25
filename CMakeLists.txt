@@ -23,9 +23,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   string(APPEND CMAKE_C_FLAGS_RELEASE " -fanalyzer")
 endif()
 
-find_program(iwyu include-what-you-use)
-if(iwyu)
-  set(CMAKE_C_INCLUDE_WHAT_YOU_USE "${iwyu};-Xiwyu;--no_fwd_decls")
+if(IWYU)
+  find_program(iwyu include-what-you-use)
+  if(iwyu)
+    set(CMAKE_C_INCLUDE_WHAT_YOU_USE "${iwyu};-Xiwyu;--no_fwd_decls")
+  endif()
 endif()
 
 add_library(
@@ -54,6 +56,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(deps REQUIRED IMPORTED_TARGET libgcrypt)
 target_link_libraries(multihash PUBLIC multibase varint murmur3 PkgConfig::deps)
 target_compile_options(multihash PRIVATE -Werror)
+add_compile_definitions(MH_FUNC_BACKEND_GCRYPT)
 
 add_library(
   varint
@@ -68,15 +71,6 @@ target_include_directories(varint PRIVATE include)
 target_compile_options(varint PRIVATE -Werror)
 
 add_library(
-  multicodec
-  SHARED
-  ./include/multicodec.h
-)
-target_include_directories(multicodec PRIVATE include)
-target_compile_options(multicodec PRIVATE -Werror)
-set_target_properties(multicodec PROPERTIES LINKER_LANGUAGE C)
-
-add_library(
   cid
   SHARED
   ./include/cid.h
@@ -87,10 +81,23 @@ set_target_properties(cid PROPERTIES SOVERSION 1)
 set_target_properties(cid PROPERTIES PUBLIC_HEADER include/cid.h)
 target_include_directories(cid PRIVATE include)
 target_compile_options(cid PRIVATE -Werror)
-target_link_libraries(cid multibase multihash multicodec varint)
+target_link_libraries(cid multibase multihash varint)
+
+add_library(
+  multiaddr
+  SHARED
+  ./include/multiaddr.h
+  ./src/multiaddr.c
+)
+set_target_properties(multiaddr PROPERTIES VERSION 1)
+set_target_properties(multiaddr PROPERTIES SOVERSION 1)
+set_target_properties(multiaddr PROPERTIES PUBLIC_HEADER include/cid.h)
+target_include_directories(multiaddr PRIVATE include)
+target_compile_options(multiaddr PRIVATE -Werror)
+target_link_libraries(multiaddr varint)
 
 add_executable(run-tests ./test/main.c)
-target_link_libraries(run-tests cmocka multibase multihash varint cid m)
+target_link_libraries(run-tests cmocka multibase multihash varint cid multiaddr m)
 target_include_directories(run-tests PRIVATE include)
 target_compile_options(run-tests PRIVATE -Werror)
 
@@ -125,49 +132,42 @@ else()
   )
 endif()
 
-target_link_libraries(run-tests-asan cmocka multibase multihash varint cid m)
+target_link_libraries(run-tests-asan cmocka multibase multihash varint cid multiaddr m)
 target_include_directories(run-tests-asan PRIVATE include)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
   add_executable(run-tests-msan ./test/main.c)
   target_compile_options(run-tests-msan PRIVATE -fsanitize=memory -g -O1 -Werror)
   target_link_options(run-tests-msan PRIVATE -fsanitize=memory -g)
-  target_link_libraries(run-tests-msan cmocka multibase multihash varint cid m)
+  target_link_libraries(run-tests-msan cmocka multibase multihash varint cid multiaddr m)
   target_include_directories(run-tests-msan PRIVATE include)
 endif()
 
 add_executable(run-tests-tsan ./test/main.c)
 target_compile_options(run-tests-tsan PRIVATE -fsanitize=thread -g -O1 -Werror)
 target_link_options(run-tests-tsan PRIVATE -fsanitize=thread -g)
-target_link_libraries(run-tests-tsan cmocka multibase multihash varint cid m)
+target_link_libraries(run-tests-tsan cmocka multibase multihash varint cid multiaddr m)
 target_include_directories(run-tests-tsan PRIVATE include)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
   add_executable(fuzz-asan ./test/fuzz.c)
   target_compile_options(fuzz-asan PRIVATE -fsanitize=fuzzer,address -g -O1 -Werror)
   target_link_options(fuzz-asan PRIVATE -fsanitize=fuzzer,address -g)
-  target_link_libraries(fuzz-asan multibase multihash varint cid m)
+  target_link_libraries(fuzz-asan multibase multihash varint cid multiaddr m)
   target_include_directories(fuzz-asan PRIVATE include)
 
   # used for running fuzzer with valgrind, since valgrind and asan don't play nicely
   add_executable(fuzz ./test/fuzz.c)
   target_compile_options(fuzz PRIVATE -fsanitize=fuzzer -g -O1 -Werror)
   target_link_options(fuzz PRIVATE -fsanitize=fuzzer -g)
-  target_link_libraries(fuzz multibase multihash varint cid m)
+  target_link_libraries(fuzz multibase multihash varint cid multiaddr m)
   target_include_directories(fuzz PRIVATE include)
 endif()
 
 add_test(NAME test COMMAND run-tests-asan)
 
-add_executable(mb ./src/multibase.c)
-target_link_libraries(mb multibase multihash varint)
-target_link_libraries(mb PkgConfig::deps)
-target_compile_options(mb PRIVATE -Werror)
-
-add_executable(cid-inspect ./src/cid.c)
-target_link_libraries(cid-inspect multibase multihash varint)
-target_link_libraries(cid-inspect PkgConfig::deps)
-target_include_directories(cid-inspect PRIVATE include)
-
-add_executable(mh ./src/multihash.c)
-target_link_libraries(mh multihash PkgConfig::deps)
+add_executable(mf ./src/cli.c)
+target_include_directories(mf PRIVATE include)
+target_link_libraries(mf varint multibase multihash cid multiaddr)
+target_link_libraries(mf PkgConfig::deps)
+target_compile_options(mf PRIVATE -Werror)

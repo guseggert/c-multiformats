@@ -36,7 +36,7 @@ ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer)
 export ASAN_SYMBOLIZER_PATH
 
 # tests w/ asan
-./run-tests-asan&
+./run-tests-asan &
 pid=$!
 wait $pid
 dump_and_fail_if_exists "asan.log.$pid"
