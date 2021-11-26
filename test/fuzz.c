@@ -101,8 +101,6 @@ int fuzz_multibase(const uint8_t* data, size_t size) {
     }
   }
 
-  printf("done testing mb\n");
-
   free(enc_buf);
   free(dec_buf);
   return 0;
