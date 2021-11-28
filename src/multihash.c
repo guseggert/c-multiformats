@@ -79,8 +79,13 @@ static mh_err identity_len(size_t input_len, size_t* const digest_len) {
   return MH_ERR_OK;
 }
 
-#ifdef MH_FUNC_BACKEND_GCRYPT
+#ifdef MH_BACKEND_GCRYPT
 #include "multihash-gcrypt.c"  // NOLINT
+#elif MH_BACKEND_MBED
+#include "multihash-mbed.c"  // NOLINT
+const mh_func mh_fn_sha2_512_256 = {.disabled = true, .next = &mh_fn_sha2_512};
+#elif MH_BACKEND_OPENSSL
+#include "multihash-openssl.c"  // NOLINT
 #else
 const mh_func mh_fn_sha2_512_256 = {.disabled = true, .next = NULL};
 #endif

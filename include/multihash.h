@@ -17,7 +17,7 @@ static const char* const MH_ERR_STRS[] = {
     "no error",
     "unknown hash function",
     "unsupported hash function",
-    "invalid multihash",
+    "invalid multihash input",
     "unable to allocate memory",
 };
 
@@ -30,6 +30,10 @@ const mh_fn_code MH_FN_CODE_SHA3_512 = 0x14;
 const mh_fn_code MH_FN_CODE_SHA3_384 = 0x15;
 const mh_fn_code MH_FN_CODE_SHA3_256 = 0x16;
 const mh_fn_code MH_FN_CODE_SHA3_224 = 0x17;
+const mh_fn_code MH_FN_CODE_SHAKE_128 = 0x18;
+const mh_fn_code MH_FN_CODE_SHAKE_256 = 0x19;
+const mh_fn_code MH_FN_CODE_KECCAK_224 = 0x1a;
+const mh_fn_code MH_FN_CODE_BLAKE3 = 0x1e;
 const mh_fn_code MH_FN_CODE_SHA2_384 = 0x20;
 const mh_fn_code MH_FN_CODE_MURMUR3_X64_64 = 0x22;
 const mh_fn_code MH_FN_CODE_SHA2_256_TRUNC254_PADDED = 0x1012;

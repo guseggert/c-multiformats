@@ -52,11 +52,23 @@ set_target_properties(multihash PROPERTIES VERSION 1)
 set_target_properties(multihash PROPERTIES SOVERSION 1)
 set_target_properties(multihash PROPERTIES PUBLIC_HEADER include/multihash.h)
 target_include_directories(multihash PUBLIC include deps/murmur3)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET libgcrypt)
-target_link_libraries(multihash PUBLIC multibase varint murmur3 PkgConfig::deps)
+target_link_libraries(multihash PUBLIC multibase varint murmur3)
 target_compile_options(multihash PRIVATE -Werror)
-add_compile_definitions(MH_FUNC_BACKEND_GCRYPT)
+
+# configure the multihash crypto backend
+
+if(MH_BACKEND_OPENSSL)
+  include(FindPkgConfig)
+  pkg_check_modules(openssl REQUIRED IMPORTED_TARGET openssl)
+  add_compile_definitions(MH_BACKEND_OPENSSL)
+  target_link_libraries(multihash PUBLIC PkgConfig::openssl)
+elseif(MH_BACKEND_MBED)
+  add_compile_definitions(MH_BACKEND_MBED)
+  target_link_libraries(multihash PUBLIC mbedtls)
+elseif(MH_BACKEND_GCRYPT)
+  add_compile_definitions(MH_BACKEND_GCRYPT)
+  target_link_libraries(multihash PUBLIC gcrypt)
+endif()
 
 add_library(
   varint
@@ -169,5 +181,4 @@ add_test(NAME test COMMAND run-tests-asan)
 add_executable(mf ./src/cli.c)
 target_include_directories(mf PRIVATE include)
 target_link_libraries(mf varint multibase multihash cid multiaddr)
-target_link_libraries(mf PkgConfig::deps)
 target_compile_options(mf PRIVATE -Werror)

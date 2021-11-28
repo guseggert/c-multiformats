@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "multibase.h"
 #include "multihash.h"
 #include "murmur3.h"
-#include "varint.h"
 
 static mh_err mh_gcrypt_hash(int code, const uint8_t* const input, size_t input_len, uint8_t* const digest, size_t digest_len) {
   (void)digest_len;
