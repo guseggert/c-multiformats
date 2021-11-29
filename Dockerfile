@@ -17,9 +17,8 @@ RUN pacman -S --noconfirm cmocka \
     libgcrypt
 
 
-# build include-what-you-use, since ubuntu packages a really old version
-# once IWYU releases a version for LLVM 13, we can use a binary distribution instead of building from source
-# tracking issue https://github.com/include-what-you-use/include-what-you-use/issues/974
+# Build include-what-you-use from Git, since there is no compatible release for LLVM 13 yet.
+# Tracking issue https://github.com/include-what-you-use/include-what-you-use/issues/974
 RUN cd /tmp && \
     git clone https://github.com/include-what-you-use/include-what-you-use.git && \
     cd include-what-you-use && \

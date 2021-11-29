@@ -548,7 +548,7 @@ mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_len, uint8_t
 // these correlate to the mb_enc enum
 const mb_encoding codes[NUM_ENCODINGS] = {
     {
-        .code = '\x00',
+        .code = '\0',
         .name = "identity",
         .enc = MB_ENC_IDENTITY,
         .encode_len = &mb_identity_encode_len,
