@@ -1,10 +1,12 @@
 This is a C implementation of [multiformats](https://github.com/multiformats/multiformats).
 
-Its goal is to be a portable implementation that can be reused across as many programming languages, operating systems, and architectures as possible. 
+Its goal is to be a portable implementation that can be reused across as many programming languages, operating systems, and architectures as possible. In addition to running tests locally, I also test this on an STM32 MCU.
 
-This also has a design goal of avoiding dynamic heap allocations, so APIs are generally usable with only stack allocations, constant-sized buffers, mem pools, etc. Currently the murmur3-x64-64 hash function is an exception to this, due to limitations of the underlying library. Also OpenSSL generally uses heap allocations internally, so using that as the crypto backend will also result in dynamic heap allocations.
+This has a design goal of avoiding dynamic heap allocations, so APIs are generally usable with only stack allocations, constant-sized buffers, mem pools, etc. There are currently two exceptions to this: 
+* The murmur3-x64-64 hash function, due to limitations of the underlying library
+* The OpenSSL multihash backend, due to limitations in OpenSSL
 
-This is under early development and APIs may break.
+This is under early development and APIs may break or be incomplete.
 
 Current feature list:
 
@@ -26,7 +28,7 @@ Current feature list:
   * [x] identity
   * [x] murmur3-x64-64
   * [x] sha2-256-trunc254-padded
-	* requires that sha2-256 is available (e.g. use a crypto backend that supports it)
+	* requires that a sha2-256 implementation is available
   * [x] libgcrypt backend
 	* [x] sha1
 	* [x] sha2-256
@@ -53,7 +55,7 @@ Current feature list:
 	* [x] sha2-512-256
     * [x] shake-128
     * [x] shake-256
-  * [x] mbedtls backend
+  * [x] Mbed TLS backend
 	* [x] sha1
 	* [x] sha2-224
 	* [x] sha2-256
@@ -81,10 +83,12 @@ This is also run through extensive static and dynamic analysis, including:
 - Optional
   - Crypto backends
 	- Libgcrypt
+	- OpenSSL 1.1
+	- Mbed TLS
 - Build/Test
   - CMake
   - cmocka
-  - Clang
+  - Clang-13
   - include-what-you-use
   - clang-tidy
   - clang-format
