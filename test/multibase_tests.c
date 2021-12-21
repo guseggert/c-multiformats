@@ -11,8 +11,8 @@
 
 #ifndef __clang_analyzer__
 
-static void mb_test_encode(char* input, size_t input_len, mb_enc encoding, char* expected, size_t expected_len, mb_err expected_err) {
-  printf("testing encode: input=");
+static void mb_test_encode(char* input, size_t input_size, mb_enc encoding, char* expected, size_t expected_size, mb_err expected_err) {
+  printf("TEST encode input=");
   for (unsigned long i = 0; i < strlen(input); i++) {
     printf("%02hhX", input[i]);
   }
@@ -24,18 +24,18 @@ static void mb_test_encode(char* input, size_t input_len, mb_enc encoding, char*
   printf("\tencoding=%s\texpected=%s\n", encoding_name, expected);
 
   uint8_t* in = (uint8_t*)input;
-  size_t res_len = mb_encode_len(in, input_len, encoding);
-  uint8_t* res_buf = calloc(res_len, sizeof(uint8_t));
+  size_t res_size = mb_encode_size(in, input_size, encoding);
+  uint8_t* res_buf = calloc(res_size, sizeof(uint8_t));
   size_t enc_bytes = 0;
-  mb_err err = mb_encode(in, input_len, encoding, res_buf, res_len, &enc_bytes);
+  mb_err err = mb_encode(in, input_size, encoding, res_buf, res_size, &enc_bytes);
 
-  printf("encoded (%lu)=", enc_bytes);
-  for (unsigned long i = 0; i < res_len; i++) {
+  printf("\tencoded (%lu)=", enc_bytes);
+  for (unsigned long i = 0; i < res_size; i++) {
     printf("%c", res_buf[i]);
   }
   printf("\t");
   printf("hex=");
-  for (unsigned long i = 0; i < res_len; i++) {
+  for (unsigned long i = 0; i < res_size; i++) {
     printf("%02hhX", res_buf[i]);
   }
   printf("\n");
@@ -48,20 +48,20 @@ static void mb_test_encode(char* input, size_t input_len, mb_enc encoding, char*
     goto cleanup;
   }
 
-  assert_int_equal(expected_len, enc_bytes);
-  assert_memory_equal(expected, res_buf, expected_len);
+  assert_int_equal(expected_size, enc_bytes);
+  assert_memory_equal(expected, res_buf, expected_size);
 
 cleanup:
   free(res_buf);
 }
 
-static void mb_test_decode(char* input, size_t input_len, char* expected, size_t expected_len, mb_err expected_err) {
-  printf("testing decode: input=%s\n", input);
+static void mb_test_decode(char* input, size_t input_size, char* expected, size_t expected_size, mb_err expected_err) {
+  printf("TEST decode input=%s\n", input);
   uint8_t* in = (uint8_t*)input;
-  size_t res_len = mb_decode_len((uint8_t*)input, input_len);
-  uint8_t* res_buf = calloc(res_len, sizeof(uint8_t));
+  size_t res_size = mb_decode_size((uint8_t*)input, input_size);
+  uint8_t* res_buf = calloc(res_size, sizeof(uint8_t));
   size_t dec_bytes = 0;
-  mb_err err = mb_decode(in, input_len, NULL, res_buf, res_len, &dec_bytes);
+  mb_err err = mb_decode(in, input_size, NULL, res_buf, res_size, &dec_bytes);
 
   const char* actual_err_str = MB_ERR_STRS[err];
   const char* expected_err_str = MB_ERR_STRS[expected_err];
@@ -71,8 +71,8 @@ static void mb_test_decode(char* input, size_t input_len, char* expected, size_t
     goto cleanup;
   }
 
-  assert_int_equal(expected_len, dec_bytes);
-  assert_memory_equal(expected, res_buf, expected_len);
+  assert_int_equal(expected_size, dec_bytes);
+  assert_memory_equal(expected, res_buf, expected_size);
 
 cleanup:
   free(res_buf);

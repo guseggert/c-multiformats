@@ -68,9 +68,10 @@ Current feature list:
   * [ ] keccak-{224,256,384,512}
 * [x] [cidv0](https://github.com/multiformats/cid#cidv0)
 * [x] [cidv1](https://github.com/multiformats/cid#cidv1)
-* [x] [multiaddr](https://github.com/multiformats/multiaddr)
+* [-] [multiaddr](https://github.com/multiformats/multiaddr)
   * [x] dynamically register custom protocols
-
+  * [ ] protocols
+  
 This is also run through extensive static and dynamic analysis, including:
 
 * Address Sanitizer, Leak Sanitizer, Memory Sanitizer, Undefined Behavior Sanitizer

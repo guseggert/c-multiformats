@@ -7,90 +7,90 @@
 
 typedef struct {
   char* name;
-  mb_err (*encode)(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written);
-  mb_err (*decode)(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written);
-  size_t (*encode_len)(const uint8_t* const input, size_t input_len);
-  size_t (*decode_len)(const uint8_t* const input, size_t input_len);
+  mb_err (*encode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size);
+  mb_err (*decode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size);
+  size_t (*encode_size)(const uint8_t* const input, size_t input_size);
+  size_t (*decode_size)(const uint8_t* const input, size_t input_size);
   mb_enc enc;
   unsigned char code;
 } mb_encoding;
 
-size_t mb_base2_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base2_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return input_len * 8;
+  return input_size * 8;
 }
-mb_err mb_base2_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  for (size_t i = 0; i < input_len; i++) {
+mb_err mb_base2_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  for (size_t i = 0; i < input_size; i++) {
     uint8_t b = input[i];
     for (char j = 7; j >= 0; j--) {
       size_t idx = i * 8 + j;
-      result[idx] = '0' + ((b >> (7 - j)) & 1);
+      result_buf[idx] = '0' + ((b >> (7 - j)) & 1);
     }
   }
-  *written = input_len * 8;
+  *result_size = input_size * 8;
   return MB_ERR_OK;
 }
 
-size_t mb_base2_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base2_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return (input_len + 7) / 8;
+  return (input_size + 7) / 8;
 }
-mb_err mb_base2_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
+mb_err mb_base2_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
   size_t res_idx = 0;
-  for (size_t i = 0; i < input_len; i++) {
+  for (size_t i = 0; i < input_size; i++) {
     unsigned char cur_res_bit_num = i % 8;
     uint8_t res_byte = input[i] - '0';
     if (res_byte > 1) {
       return MB_ERR_INVALID_INPUT;
     }
-    result[res_idx] |= (res_byte << (7U - cur_res_bit_num));
+    result_buf[res_idx] |= (res_byte << (7U - cur_res_bit_num));
 
     if (cur_res_bit_num == 7) {
       res_idx++;
     }
   }
-  *written = (input_len + 7) / 8;
+  *result_size = (input_size + 7) / 8;
   return MB_ERR_OK;
 }
 
-size_t mb_identity_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_identity_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return input_len;
+  return input_size;
 }
-mb_err mb_identity_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  memcpy(result, input, input_len);
-  *written = input_len;
+mb_err mb_identity_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  memcpy(result_buf, input, input_size);
+  *result_size = input_size;
   return MB_ERR_OK;
 }
 
-size_t mb_identity_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_identity_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return input_len;
+  return input_size;
 }
-mb_err mb_identity_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  return mb_identity_encode(input, input_len, result, result_len, written);
+mb_err mb_identity_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_identity_encode(input, input_size, result_buf, result_buf_size, result_size);
 }
 
-// derivation, given le=encoded len and ld=decoded len:
+// derivation, given le=encoded size and ld=decoded size:
 // le = (8 * ld + 5) / 6
 // ld = ceil((6 * le - 5) / 8)
 // ld = (6 * le + 2) / 8
 // ld = (3 * le + 1) / 4
-size_t mb_base64_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base64_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return ((3 * input_len) + 1) / 4;
+  return ((3 * input_size) + 1) / 4;
 }
-mb_err mb_base64_decode_lookup(const char* lookup, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                               size_t* const written) {
+mb_err mb_base64_decode_lookup(const char* lookup, const uint8_t* const input, size_t input_size, uint8_t* const result,
+                               size_t* const result_size) {
   size_t res_idx = 0;
   uint16_t bit_accum = 0;
   uint8_t bit_accum_bits = 0;
 
-  for (size_t input_idx = 0; input_idx < input_len; input_idx++) {
+  for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     // read an input byte into accumulator (only the bottom 6 bits)
     char ch = lookup[input[input_idx]];
     if (ch == -1) {
@@ -114,22 +114,22 @@ mb_err mb_base64_decode_lookup(const char* lookup, const uint8_t* const input, s
   if (bit_accum_bits == 6) {
     return MB_ERR_INVALID_INPUT;
   }
-  *written = res_idx;
+  *result_size = res_idx;
   return MB_ERR_OK;
 }
 
 // reference: https://datatracker.ietf.org/doc/html/rfc4648
-size_t mb_base64_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base64_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return (input_len * 8 + 5) / 6;
+  return (input_size * 8 + 5) / 6;
 }
-mb_err mb_base64_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                                 size_t* const written) {
+mb_err mb_base64_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_size, uint8_t* const result,
+                                 size_t* const result_size) {
   size_t res_idx = 0;
   uint16_t bit_accum = 0;
   uint8_t bit_accum_bits = 0;
 
-  for (size_t input_idx = 0; input_idx < input_len; input_idx++) {
+  for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     // read off a byte from the input
     bit_accum <<= 8;
     bit_accum |= input[input_idx];
@@ -153,21 +153,21 @@ mb_err mb_base64_encode_alphabet(const char* const alphabet, const uint8_t* cons
     uint8_t rest = (bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (6 - bit_accum_bits);
     result[res_idx++] = alphabet[rest];
   }
-  *written = res_idx;
+  *result_size = res_idx;
 
   return MB_ERR_OK;
 }
 
-size_t mb_base32_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base32_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return (input_len * 8 + 4) / 5;
+  return (input_size * 8 + 4) / 5;
 }
-mb_err mb_base32_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                                 size_t* const written) {
+mb_err mb_base32_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_size, uint8_t* const result,
+                                 size_t* const result_size) {
   size_t res_idx = 0;
   uint16_t bit_accum = 0;
   uint8_t bit_accum_bits = 0;
-  for (size_t input_idx = 0; input_idx < input_len; input_idx++) {
+  for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     bit_accum <<= 8;
     bit_accum |= input[input_idx];
     bit_accum_bits += 8;
@@ -181,31 +181,31 @@ mb_err mb_base32_encode_alphabet(const char* const alphabet, const uint8_t* cons
     uint8_t rest = (bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (5 - bit_accum_bits);
     result[res_idx++] = alphabet[rest];
   }
-  *written = res_idx;
+  *result_size = res_idx;
   return MB_ERR_OK;
 }
-mb_err mb_base32_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  return mb_base32_encode_alphabet("abcdefghijklmnopqrstuvwxyz234567", input, input_len, result, written);
+mb_err mb_base32_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base32_encode_alphabet("abcdefghijklmnopqrstuvwxyz234567", input, input_size, result_buf, result_size);
 }
-mb_err mb_base32upper_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len,
-                             size_t* const written) {
-  (void)result_len;
-  return mb_base32_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", input, input_len, result, written);
+mb_err mb_base32upper_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                             size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base32_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", input, input_size, result_buf, result_size);
 }
 
 // TODO(guseggert): generalize this so it can be used for base 2^n (base2, base4, base8, base16, base32, base64)
-size_t mb_base32_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base32_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return (input_len * 5 + 3) / 8;
+  return (input_size * 5 + 3) / 8;
 }
-mb_err mb_base32_decode_lookup(const char* lookup, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                               size_t* const written) {
+mb_err mb_base32_decode_lookup(const char* lookup, const uint8_t* const input, size_t input_size, uint8_t* const result_buf,
+                               size_t* const result_size) {
   size_t res_idx = 0;
   uint16_t bit_accum = 0;
   uint8_t bit_accum_bits = 0;
 
-  for (size_t input_idx = 0; input_idx < input_len; input_idx++) {
+  for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     char ch = lookup[input[input_idx]];
     if (ch == -1) {
       return MB_ERR_INVALID_INPUT;
@@ -216,18 +216,18 @@ mb_err mb_base32_decode_lookup(const char* lookup, const uint8_t* const input, s
 
     if (bit_accum_bits >= 8) {
       uint8_t b = (bit_accum & (0xFF << (bit_accum_bits - 8))) >> (bit_accum_bits - 8);
-      result[res_idx++] = b;
+      result_buf[res_idx++] = b;
       bit_accum_bits -= 8;
     }
   }
   if (bit_accum_bits == 6) {
     return MB_ERR_INVALID_INPUT;
   }
-  *written = res_idx;
+  *result_size = res_idx;
   return MB_ERR_OK;
 }
-mb_err mb_base32_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
+mb_err mb_base32_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -246,11 +246,11 @@ mb_err mb_base32_decode(const uint8_t* const input, size_t input_len, uint8_t* c
       15, 16, 17, 18, 19, 20, 21, 22,  // 112-119
       23, 24, 25, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base32_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base32_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
-mb_err mb_base32upper_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len,
-                             size_t* const written) {
-  (void)result_len;
+mb_err mb_base32upper_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                             size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -269,15 +269,15 @@ mb_err mb_base32upper_decode(const uint8_t* const input, size_t input_len, uint8
       -1, -1, -1, -1, -1, -1, -1, -1,  // 112-119
       -1, -1, -1, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base32_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base32_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-mb_err mb_base64_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", input, input_len, result, written);
+mb_err mb_base64_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", input, input_size, result_buf, result_size);
 }
-mb_err mb_base64_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
+mb_err mb_base64_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -296,15 +296,15 @@ mb_err mb_base64_decode(const uint8_t* const input, size_t input_len, uint8_t* c
       41, 42, 43, 44, 45, 46, 47, 48,  // 112-119
       49, 50, 51, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base64_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base64_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-mb_err mb_base64url_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", input, input_len, result, written);
+mb_err mb_base64url_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", input, input_size, result_buf, result_size);
 }
-mb_err mb_base64url_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
+mb_err mb_base64url_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -323,51 +323,51 @@ mb_err mb_base64url_decode(const uint8_t* const input, size_t input_len, uint8_t
       41, 42, 43, 44, 45, 46, 47, 48,  // 112-119
       49, 50, 51, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base64_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base64_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-size_t mb_base16_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base16_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return input_len * 2;
+  return input_size * 2;
 }
-mb_err mb_base16_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                                 size_t* const written) {
-  for (size_t i = 0, j = 0; i < input_len; i++, j += 2) {
+mb_err mb_base16_encode_alphabet(const char* const alphabet, const uint8_t* const input, size_t input_size, uint8_t* const result_buf,
+                                 size_t* const result_size) {
+  for (size_t i = 0, j = 0; i < input_size; i++, j += 2) {
     uint8_t b = input[i];
-    result[j] = alphabet[(b >> 4) & 0xf];
-    result[j + 1] = alphabet[b & 0xf];
+    result_buf[j] = alphabet[(b >> 4) & 0xf];
+    result_buf[j + 1] = alphabet[b & 0xf];
   }
-  *written = input_len * 2;
+  *result_size = input_size * 2;
   return MB_ERR_OK;
 }
-mb_err mb_base16_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
-  return mb_base16_encode_alphabet("0123456789abcdef", input, input_len, result, written);
+mb_err mb_base16_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base16_encode_alphabet("0123456789abcdef", input, input_size, result_buf, result_size);
 }
-mb_err mb_base16upper_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len,
-                             size_t* const written) {
-  (void)result_len;
-  return mb_base16_encode_alphabet("0123456789ABCDEF", input, input_len, result, written);
+mb_err mb_base16upper_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                             size_t* const result_size) {
+  (void)result_buf_size;
+  return mb_base16_encode_alphabet("0123456789ABCDEF", input, input_size, result_buf, result_size);
 }
 
-size_t mb_base16_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base16_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
-  return input_len / 2;
+  return input_size / 2;
 }
-mb_err mb_base16_decode_lookup(const char* const lookup, const uint8_t* const input, size_t input_len, uint8_t* const result,
-                               size_t* const written) {
-  if (input_len % 2 != 0) {
+mb_err mb_base16_decode_lookup(const char* const lookup, const uint8_t* const input, size_t input_size, uint8_t* const result_buf,
+                               size_t* const result_size) {
+  if (input_size % 2 != 0) {
     return MB_ERR_INVALID_INPUT;
   }
-  for (size_t i = 0, j = 0; i < input_len; i += 2, j++) {
-    result[j] |= lookup[input[i]] << 4;
-    result[j] |= lookup[input[i + 1]];
+  for (size_t i = 0, j = 0; i < input_size; i += 2, j++) {
+    result_buf[j] |= lookup[input[i]] << 4;
+    result_buf[j] |= lookup[input[i + 1]];
   }
-  *written = input_len / 2;
+  *result_size = input_size / 2;
   return MB_ERR_OK;
 }
-mb_err mb_base16_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  (void)result_len;
+mb_err mb_base16_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -386,11 +386,11 @@ mb_err mb_base16_decode(const uint8_t* const input, size_t input_len, uint8_t* c
       -1, -1, -1, -1, -1, -1, -1, -1,  // 112-119
       -1, -1, -1, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base16_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base16_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
-mb_err mb_base16upper_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len,
-                             size_t* const written) {
-  (void)result_len;
+mb_err mb_base16upper_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                             size_t* const result_size) {
+  (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -409,40 +409,40 @@ mb_err mb_base16upper_decode(const uint8_t* const input, size_t input_len, uint8
       -1, -1, -1, -1, -1, -1, -1, -1,  // 112-119
       -1, -1, -1, -1, -1, -1, -1, -1,  // 120-127
   };
-  return mb_base16_decode_lookup(lookup, input, input_len, result, written);
+  return mb_base16_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-size_t mb_base58btc_encode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base58btc_encode_size(const uint8_t* const input, size_t input_size) {
   // this is approximate, sometimes it can be overshoot by 1 byte
   size_t zeros = 0;
-  while (zeros < input_len && !input[zeros]) {
+  while (zeros < input_size && !input[zeros]) {
     zeros++;
   }
-  return ((input_len - zeros) * 138 / 100 + 1) + zeros;
+  return ((input_size - zeros) * 138 / 100 + 1) + zeros;
 }
 
 // reference: https://tools.ietf.org/id/draft-msporny-base58-01.html
-mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
-  if (input_len == 0) {
+mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+  if (input_size == 0) {
     return MB_ERR_OK;
   }
 
   const char* alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   size_t num_zeros = 0;
 
-  while (num_zeros < input_len && input[num_zeros] == 0) {
-    result[num_zeros] = '1';
+  while (num_zeros < input_size && input[num_zeros] == 0) {
+    result_buf[num_zeros] = '1';
     num_zeros++;
   }
 
-  size_t high = result_len;
+  size_t high = result_buf_size;
   int carry = 0;
   size_t j = 0;
-  for (size_t i = num_zeros; i < input_len; i++, high = j) {
+  for (size_t i = num_zeros; i < input_size; i++, high = j) {
     carry = input[i];
-    for (j = result_len - 1; (j > high) || carry; j--) {
-      carry += 256 * result[j];
-      result[j] = carry % 58;
+    for (j = result_buf_size - 1; (j > high) || carry; j--) {
+      carry += 256 * result_buf[j];
+      result_buf[j] = carry % 58;
       carry /= 58;
       if (!j) {
         break;
@@ -454,30 +454,30 @@ mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_len, uint8_t
 
   // find the start of the non-zero section
   size_t b58_bytes_idx = num_zeros;
-  for (; b58_bytes_idx < result_len && !result[b58_bytes_idx]; b58_bytes_idx++) {
+  for (; b58_bytes_idx < result_buf_size && !result_buf[b58_bytes_idx]; b58_bytes_idx++) {
     // nothing
   }
 
   // then swap everything left as necessary
   size_t unused = b58_bytes_idx - num_zeros;
   size_t i = b58_bytes_idx;
-  for (; i < result_len; i++) {
-    result[i - unused] = alphabet[result[i]];
+  for (; i < result_buf_size; i++) {
+    result_buf[i - unused] = alphabet[result_buf[i]];
   }
-  *written = i - unused;
+  *result_size = i - unused;
   return MB_ERR_OK;
 }
 
-size_t mb_base58btc_decode_len(const uint8_t* const input, size_t input_len) {
+size_t mb_base58btc_decode_size(const uint8_t* const input, size_t input_size) {
   // this is approximate, sometimes it can overshoot by 1 byte
   size_t zeros = 0;
-  while (zeros < input_len && input[zeros] == '1') {
+  while (zeros < input_size && input[zeros] == '1') {
     zeros++;
   }
-  return ((input_len - zeros) * 733 / 1000 + 1) + zeros;
+  return ((input_size - zeros) * 733 / 1000 + 1) + zeros;
 }
 
-mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_len, uint8_t* const result, size_t result_len, size_t* const written) {
+mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -496,27 +496,27 @@ mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_len, uint8_t
       47, 48, 49, 50, 51, 52, 53, 54,  // 112-119
       55, 56, 57, -1, -1, -1, -1, -1,  // 120-127
   };
-  if (input_len == 0) {
+  if (input_size == 0) {
     return MB_ERR_OK;
   }
 
   size_t num_zeros = 0;
 
-  while (num_zeros < input_len && input[num_zeros] == '1') {
+  while (num_zeros < input_size && input[num_zeros] == '1') {
     num_zeros++;
   }
 
-  size_t high = result_len;
+  size_t high = result_buf_size;
   int carry = 0;
   size_t j = 0;
-  for (size_t i = num_zeros; i < input_len; i++, high = j) {
+  for (size_t i = num_zeros; i < input_size; i++, high = j) {
     carry = lookup[input[i]];  // NOLINT
     if (carry == -1) {
       return MB_ERR_INVALID_INPUT;
     }
-    for (j = result_len - 1; (j > high) || carry; j--) {
-      carry += 58 * result[j];
-      result[j] = carry % 256;
+    for (j = result_buf_size - 1; (j > high) || carry; j--) {
+      carry += 58 * result_buf[j];
+      result_buf[j] = carry % 256;
       carry /= 256;
       if (!j) {
         break;
@@ -526,21 +526,21 @@ mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_len, uint8_t
 
   // write zeros
   if (num_zeros > 0) {
-    memset(result, 0, num_zeros);
+    memset(result_buf, 0, num_zeros);
   }
 
   // find the first non-zero byte of the buf
   size_t b58_bytes_idx = 0;
-  for (; b58_bytes_idx < result_len && !result[b58_bytes_idx]; b58_bytes_idx++) {
+  for (; b58_bytes_idx < result_buf_size && !result_buf[b58_bytes_idx]; b58_bytes_idx++) {
     // nothing
   }
   // swap left as necessary
   size_t i = num_zeros;
-  for (; b58_bytes_idx < result_len; i++, b58_bytes_idx++) {
-    result[i] = result[b58_bytes_idx];
+  for (; b58_bytes_idx < result_buf_size; i++, b58_bytes_idx++) {
+    result_buf[i] = result_buf[b58_bytes_idx];
   }
 
-  *written = i;
+  *result_size = i;
 
   return MB_ERR_OK;
 }
@@ -551,152 +551,152 @@ const mb_encoding codes[NUM_ENCODINGS] = {
         .code = '\0',
         .name = "identity",
         .enc = MB_ENC_IDENTITY,
-        .encode_len = &mb_identity_encode_len,
+        .encode_size = &mb_identity_encode_size,
         .encode = &mb_identity_encode,
-        .decode_len = &mb_identity_decode_len,
+        .decode_size = &mb_identity_decode_size,
         .decode = &mb_identity_decode,
     },
     {
         .code = '0',
         .name = "base2",
         .enc = MB_ENC_BASE2,
-        .encode_len = &mb_base2_encode_len,
+        .encode_size = &mb_base2_encode_size,
         .encode = &mb_base2_encode,
-        .decode_len = &mb_base2_decode_len,
+        .decode_size = &mb_base2_decode_size,
         .decode = &mb_base2_decode,
     },
     {
         .code = 'f',
         .name = "base16",
         .enc = MB_ENC_BASE16,
-        .encode_len = &mb_base16_encode_len,
+        .encode_size = &mb_base16_encode_size,
         .encode = &mb_base16_encode,
-        .decode_len = &mb_base16_decode_len,
+        .decode_size = &mb_base16_decode_size,
         .decode = &mb_base16_decode,
     },
     {
         .code = 'F',
         .name = "base16upper",
         .enc = MB_ENC_BASE16UPPER,
-        .encode_len = &mb_base16_encode_len,
+        .encode_size = &mb_base16_encode_size,
         .encode = &mb_base16upper_encode,
-        .decode_len = &mb_base16_decode_len,
+        .decode_size = &mb_base16_decode_size,
         .decode = &mb_base16upper_decode,
     },
     {
         .code = 'b',
         .name = "base32",
         .enc = MB_ENC_BASE32,
-        .encode_len = &mb_base32_encode_len,
+        .encode_size = &mb_base32_encode_size,
         .encode = &mb_base32_encode,
-        .decode_len = &mb_base32_decode_len,
+        .decode_size = &mb_base32_decode_size,
         .decode = &mb_base32_decode,
     },
     {
         .code = 'B',
         .name = "base32upper",
         .enc = MB_ENC_BASE32UPPER,
-        .encode_len = &mb_base32_encode_len,
+        .encode_size = &mb_base32_encode_size,
         .encode = &mb_base32upper_encode,
-        .decode_len = &mb_base32_decode_len,
+        .decode_size = &mb_base32_decode_size,
         .decode = &mb_base32upper_decode,
     },
     {
         .code = 'z',
         .name = "base58btc",
         .enc = MB_ENC_BASE58BTC,
-        .encode_len = &mb_base58btc_encode_len,
+        .encode_size = &mb_base58btc_encode_size,
         .encode = &mb_base58btc_encode,
-        .decode_len = &mb_base58btc_decode_len,
+        .decode_size = &mb_base58btc_decode_size,
         .decode = &mb_base58btc_decode,
     },
     {
         .code = 'm',
         .name = "base64",
         .enc = MB_ENC_BASE64,
-        .encode_len = &mb_base64_encode_len,
+        .encode_size = &mb_base64_encode_size,
         .encode = &mb_base64_encode,
-        .decode_len = &mb_base64_decode_len,
+        .decode_size = &mb_base64_decode_size,
         .decode = &mb_base64_decode,
     },
     {
         .code = 'u',
         .name = "base64url",
         .enc = MB_ENC_BASE64URL,
-        .encode_len = &mb_base64_encode_len,
+        .encode_size = &mb_base64_encode_size,
         .encode = &mb_base64url_encode,
-        .decode_len = &mb_base64_decode_len,
+        .decode_size = &mb_base64_decode_size,
         .decode = &mb_base64url_decode,
     },
 };
 
-size_t mb_encode_len(const uint8_t* const input, size_t input_len, mb_enc encoding) {
-  if (input_len == 0) {
+size_t mb_encode_size(const uint8_t* const input, size_t input_size, mb_enc encoding) {
+  if (input_size == 0) {
     return 1;
   }
-  return codes[encoding].encode_len(input, input_len) + 1;
+  return codes[encoding].encode_size(input, input_size) + 1;
 }
 
-mb_err mb_encode(const uint8_t* const input, size_t input_len, mb_enc encoding, uint8_t* const result_buf, size_t result_buf_len,
-                 size_t* written) {
+mb_err mb_encode(const uint8_t* const input, size_t input_size, mb_enc encoding, uint8_t* const result_buf, size_t result_buf_size,
+                 size_t* result_size) {
   if (encoding > NUM_ENCODINGS - 1) {
     return MB_ERR_UNKNOWN_ENC;
   }
   // encoding always writes at least one byte for the multibase prefix
-  if (result_buf_len < 1) {
+  if (result_buf_size < 1) {
     return MB_ERR_BUF_SIZE;
   }
   mb_encoding enc = codes[encoding];
   result_buf[0] = enc.code;
-  if (input_len == 0 || input == NULL) {
-    *written = 1;
+  if (input_size == 0 || input == NULL) {
+    *result_size = 1;
     return MB_ERR_OK;
   }
-  mb_err err = enc.encode(input, input_len, result_buf + 1, result_buf_len - 1, written);
-  (*written)++;
+  mb_err err = enc.encode(input, input_size, result_buf + 1, result_buf_size - 1, result_size);
+  (*result_size)++;
   return err;
 }
 
-size_t mb_decode_len(const uint8_t* const input, size_t input_len) {
-  if (input_len == 1) {
+size_t mb_decode_size(const uint8_t* const input, size_t input_size) {
+  if (input_size == 1) {
     return 0;
   }
   uint8_t prefix = input[0];
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (codes[i].code == prefix) {
-      return codes[i].decode_len(input + 1, input_len - 1);
+      return codes[i].decode_size(input + 1, input_size - 1);
     }
   }
   return MB_ERR_UNKNOWN_ENC;
 }
 
-mb_err mb_decode_as_len(const uint8_t* const input, size_t input_len, mb_enc encoding) {
-  if (input_len == 0) {
+mb_err mb_decode_as_size(const uint8_t* const input, size_t input_size, mb_enc encoding) {
+  if (input_size == 0) {
     return 0;
   }
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (codes[i].enc == encoding) {
-      return codes[i].decode_len(input, input_len);
+      return codes[i].decode_size(input, input_size);
     }
   }
   return MB_ERR_UNKNOWN_ENC;
 }
 
-mb_err mb_decode_as(const uint8_t* input, size_t input_len, mb_enc encoding, uint8_t* result_buf, size_t result_buf_len, size_t* written) {
+mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size, size_t* result_size) {
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (codes[i].enc == encoding) {
-      if (input_len == 0) {
+      if (input_size == 0) {
         return MB_ERR_OK;
       }
-      return codes[i].decode(input, input_len, result_buf, result_buf_len, written);
+      return codes[i].decode(input, input_size, result_buf, result_buf_size, result_size);
     }
   }
   return MB_ERR_UNKNOWN_ENC;
 }
 
-mb_err mb_decode(const uint8_t* const input, size_t len, mb_enc* const encoding, uint8_t* const result_buf, size_t result_buf_len,
-                 size_t* const written) {
-  if (len < 1) {
+mb_err mb_decode(const uint8_t* const input, size_t size, mb_enc* const encoding, uint8_t* const result_buf, size_t result_buf_size,
+                 size_t* const result_size) {
+  if (size < 1) {
     return MB_ERR_INVALID_INPUT;
   }
   uint8_t prefix = input[0];
@@ -705,10 +705,10 @@ mb_err mb_decode(const uint8_t* const input, size_t len, mb_enc* const encoding,
       if (encoding != NULL) {
         *encoding = i;
       }
-      if (len == 1) {
+      if (size == 1) {
         return MB_ERR_OK;
       }
-      return codes[i].decode(input + 1, len - 1, result_buf, result_buf_len, written);
+      return codes[i].decode(input + 1, size - 1, result_buf, result_buf_size, result_size);
     }
   }
   return MB_ERR_UNKNOWN_ENC;

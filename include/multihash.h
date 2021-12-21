@@ -46,8 +46,8 @@ typedef struct mh_func {
   const char* const name;
   // Disables this function for lookups
   const bool disabled;
-  mh_err (*const hash_fn)(const uint8_t* const input, size_t input_len, uint8_t* const digest, size_t digest_len);
-  mh_err (*const hash_fn_len)(size_t input_len, size_t* const digest_len);
+  mh_err (*const hash_fn)(const uint8_t* const input, size_t input_size, uint8_t* const digest, size_t digest_size);
+  mh_err (*const hash_fn_size)(size_t input_size, size_t* const digest_size);
   const struct mh_func* next;
 } mh_func;
 
@@ -62,44 +62,44 @@ mh_err mh_func_by_name(const char* name, const mh_func** func);
 mh_err mh_func_by_code(mh_fn_code fn_code, const mh_func** func);
 
 /**
- * Extracts the hash function code @fn_code from the multihash @bytes of length @bytes_len.
+ * Extracts the hash function code @fn_code from the multihash @bytes of size @bytes_size.
  *
  * @fn_code is not set if it is null.
  */
-mh_err mh_read_fn_code(const uint8_t* bytes, size_t bytes_len, mh_fn_code* fn_code);
+mh_err mh_read_fn_code(const uint8_t* bytes, size_t bytes_size, mh_fn_code* fn_code);
 
 /**
- * Extracts the @digest from the multihash @bytes of length @bytes_len.
+ * Extracts the @digest from the multihash @bytes of size @bytes_size.
  *
  * This does not copy the bytes, it merely returns a pointer to the same underlying data.
  *
  * @digest_size and @digest are only set if they are not respectively null.
  */
-mh_err mh_read_digest(const uint8_t* bytes, size_t bytes_len, size_t* digest_size, const uint8_t** digest);
+mh_err mh_read_digest(const uint8_t* bytes, size_t bytes_size, size_t* digest_size, const uint8_t** digest);
 
 /**
- * Returns true if the given @bytes of length @bytes_len constitute a valid multihash.
+ * Returns true if the given @bytes of size @bytes_size constitute a valid multihash.
  */
-bool mh_validate(const uint8_t* bytes, size_t bytes_len);
+bool mh_validate(const uint8_t* bytes, size_t bytes_size);
 
 /**
- * Computes the digest length @digest_len for the given hash function @fn given the input length @input_len.
+ * Computes the digest size @digest_size for the given hash function @fn given the input size @input_size.
  */
-mh_err mh_digest_len(mh_fn_code fn_code, size_t input_len, size_t* digest_len);
+mh_err mh_digest_size(mh_fn_code fn_code, size_t input_size, size_t* digest_size);
 
 /**
- * Computes the @digest of the given length @digest_len of @input of length @input_len bytes, using the @fn hash function.
+ * Computes the @digest of the given size @digest_size of @input of size @input_size bytes, using the @fn hash function.
  */
-mh_err mh_digest(const uint8_t* input, size_t input_len, mh_fn_code fn_code, uint8_t* digest, size_t digest_len);
+mh_err mh_digest(const uint8_t* input, size_t input_size, mh_fn_code fn_code, uint8_t* digest, size_t digest_size);
 
 /**
- * Computes the length @encode_len of the mutlihash encoding for the given hash function @fn and @input_len.
+ * Computes the size @encode_size of the mutlihash encoding for the given hash function @fn and @input_size.
  */
-mh_err mh_encode_len(mh_fn_code fn_code, size_t input_len, size_t* encode_len);
+mh_err mh_encode_size(mh_fn_code fn_code, size_t input_size, size_t* encode_size);
 
 /**
- * Computes the digest of the given @input of length @input_len bytes, using the @fn hash function,
- * and encodes the result as a multihash in @bytes of given length @bytes_len.
+ * Computes the digest of the given @input of size @input_size bytes, using the @fn hash function,
+ * and encodes the result as a multihash in @bytes of given size @bytes_size.
  */
-mh_err mh_encode(const uint8_t* input, size_t input_len, mh_fn_code fn_code, uint8_t* bytes, size_t bytes_len);
+mh_err mh_encode(const uint8_t* input, size_t input_size, mh_fn_code fn_code, uint8_t* bytes, size_t bytes_size);
 #endif

@@ -26,33 +26,33 @@ static const char* const CID_ERR_STRS[] = {
 };
 
 /**
- * Reads the CID @version from @cid bytes of size @cid_len.
+ * Reads the CID @version from @cid bytes of size @cid_size.
  */
-cid_err cid_read_version(const uint8_t* cid, size_t cid_len, uint64_t* version);
+cid_err cid_read_version(const uint8_t* cid, size_t cid_size, uint64_t* version);
 
 /**
- * Reads the content type @content_type from @cid bytes of size @cid_len.
+ * Reads the content type @content_type from @cid bytes of size @cid_size.
  */
-cid_err cid_read_content_type(const uint8_t* cid, size_t cid_len, uint64_t* content_type);
+cid_err cid_read_content_type(const uint8_t* cid, size_t cid_size, uint64_t* content_type);
 
 /**
- * Reads the @multihash bytes and length @multihash_len from @cid bytes of size @cid_len.
+ * Reads the @multihash bytes and size @multihash_size from @cid bytes of size @cid_size.
  *
  * No heap memory is allocated, @multihash points to an element of @cid.
  */
-cid_err cid_read_multihash(const uint8_t* cid, size_t cid_len, const uint8_t** multihash, size_t* multihash_len);
+cid_err cid_read_multihash(const uint8_t* cid, size_t cid_size, const uint8_t** multihash, size_t* multihash_size);
 
 /**
- * Computes the length @len in bytes to convert the CID string @cid to CID bytes.
+ * Computes the size @size in bytes to convert the CID string @cid to CID bytes.
  *
  * Call this before cid_str_to_bytes() to compute the buffer size to allocate.
  */
-cid_err cid_str_to_bytes_len(const char* cid, size_t* len);
+cid_err cid_str_to_bytes_size(const char* cid, size_t* size);
 
 /**
- * Returns an error if @cid of @cid_len bytes is an invalid CID, otherwise return @CID_ERR_OK;
+ * Returns an error if @cid of @cid_size bytes is an invalid CID, otherwise return @CID_ERR_OK;
  */
-cid_err cid_validate(const uint8_t* cid, size_t cid_len);
+cid_err cid_validate(const uint8_t* cid, size_t cid_size);
 
 /**
  * Returns an error if the null-terminated ASCII/UTF8-encoded CID string @cid is an
@@ -62,10 +62,10 @@ cid_err cid_str_validate(const char* cid);
 
 /**
  * Converts a null-terminated ASCII/UTF8-encoded CID string @cid to CID bytes,
- * writing @bytes_len bytes to buffer @buf of length @buf_len bytes.
+ * writing @bytes_size bytes to buffer @buf of length @buf_size bytes.
  *
  * The @buf must be cleared before calling this.
  */
-cid_err cid_str_to_bytes(const char* cid, uint8_t* buf, size_t buf_len, size_t* bytes_len);
+cid_err cid_str_to_bytes(const char* cid, uint8_t* buf, size_t buf_size, size_t* bytes_size);
 
 #endif

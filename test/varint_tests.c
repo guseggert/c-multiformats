@@ -10,27 +10,27 @@
 #include "varint.h"
 
 static void varint_test() {
-  // 0 should return w/ length of 1
+  // 0 should return w/ size of 1
   {
-    uint8_t* varint = malloc(sizeof(uint8_t) * UINT64_MAX_BYTES);
-    size_t varint_len = 0;
-    varint_err err = uint64_to_varint(0, varint, &varint_len);
+    uint8_t* varint = malloc(sizeof(uint8_t) * VARINT_UINT64_MAX_BYTES);
+    size_t varint_size = 0;
+    varint_err err = uint64_to_varint(0, varint, &varint_size);
     assert_int_equal(0, err);
-    assert_int_equal(1, varint_len);
+    assert_int_equal(1, varint_size);
     uint8_t expected[1] = {0};
-    assert_memory_equal(expected, varint, varint_len);
+    assert_memory_equal(expected, varint, varint_size);
     free(varint);
   }
 
   // (2^64)-1 should return correctly
   {
-    uint8_t* varint = malloc(sizeof(uint8_t) * UINT64_MAX_BYTES);
-    size_t varint_len = 0;
-    varint_err err = uint64_to_varint(UINT64_MAX, varint, &varint_len);
+    uint8_t* varint = malloc(sizeof(uint8_t) * VARINT_UINT64_MAX_BYTES);
+    size_t varint_size = 0;
+    varint_err err = uint64_to_varint(UINT64_MAX, varint, &varint_size);
     assert_int_equal(0, err);
-    assert_int_equal(10, varint_len);
+    assert_int_equal(10, varint_size);
     uint8_t expected[10] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 1};
-    assert_memory_equal(expected, varint, varint_len);
+    assert_memory_equal(expected, varint, varint_size);
     free(varint);
   }
 
@@ -38,10 +38,10 @@ static void varint_test() {
   {
     uint8_t bytes[3] = {172 /*1010 1100*/, 2 /*0000 0010*/, 129};
     uint64_t val = 0;
-    size_t varint_len = 0;
-    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_len);
+    size_t varint_size = 0;
+    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_size);
     assert_int_equal(0, err);
-    assert_int_equal(2, varint_len);
+    assert_int_equal(2, varint_size);
     assert_int_equal(300, val);
   }
 
@@ -49,8 +49,8 @@ static void varint_test() {
   {
     uint8_t bytes[11] = {172 /*1010 1100*/, 172, 172, 172, 172, 172, 172, 172, 172, 172, 172};
     uint64_t val = 0;
-    size_t varint_len = 0;
-    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_len);
+    size_t varint_size = 0;
+    varint_err err = varint_to_uint64(bytes, 3, &val, &varint_size);
     assert_int_equal(VARINT_ERR_INVALID_INPUT, err);
   }
 }

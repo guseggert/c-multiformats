@@ -12,6 +12,8 @@ Checks: >
   -llvm-header-guard,
   -modernize-deprecated-headers,
 
-
+CheckOptions:
+  - key: readability-function-cognitive-complexity.Threshold
+    value: '30'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^((?!murmur3).)*$'

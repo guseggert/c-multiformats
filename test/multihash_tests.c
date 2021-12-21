@@ -11,29 +11,30 @@
 #include "test_utils.h"
 
 static void mh_hash_sha2_256_test() {
-  uint8_t* input = (uint8_t*)"hello, world";
-  size_t result_len = 0;
-  mh_err err = mh_digest_len(MH_FN_CODE_MURMUR3_X64_64, 13, &result_len);
+  char* input_str = "hello, world";
+  uint8_t* input = (uint8_t*)input_str;
+  size_t result_size = 0;
+  mh_err err = mh_digest_size(MH_FN_CODE_MURMUR3_X64_64, 13, &result_size);
   if (err) {
-    printf("computing digest length: %s\n", MH_ERR_STRS[err]);
+    printf("computing digest size: %s\n", MH_ERR_STRS[err]);
     fail();
   }
-  uint8_t* digest = calloc(result_len, sizeof(uint8_t));
+  uint8_t* digest = calloc(result_size, sizeof(uint8_t));
   if (digest == NULL) {
     printf("mem error allocating digest\n");
     fail();
   }
-  err = mh_digest(input, 13, MH_FN_CODE_MURMUR3_X64_64, digest, result_len);
+  err = mh_digest(input, 13, MH_FN_CODE_MURMUR3_X64_64, digest, result_size);
   if (err) {
     printf("computing digest: %s\n", MH_ERR_STRS[err]);
     free(digest);
     fail();
   }
-  printf("digest: '");
-  for (size_t i = 0; i < result_len; i++) {
+  printf("TEST digest input='%s' digest=", input_str);
+  for (size_t i = 0; i < result_size; i++) {
     printf("%hhx", digest[i]);
   }
-  printf("'\n");
+  printf("\n");
   free(digest);
 }
 

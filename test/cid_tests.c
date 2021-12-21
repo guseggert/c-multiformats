@@ -56,10 +56,10 @@ static void cid_read_content_type_invalid_varint() {
 static void cid_read_multihash_cidv0() {
   uint8_t cid[34] = {0x12, 0x20, 0x01};
   const uint8_t* multihash = NULL;
-  size_t multihash_len = 0;
-  cid_err err = cid_read_multihash(cid, 34, &multihash, &multihash_len);
+  size_t multihash_size = 0;
+  cid_err err = cid_read_multihash(cid, 34, &multihash, &multihash_size);
   assert_string_equal("no error", CID_ERR_STRS[err]);
-  assert_int_equal(34, multihash_len);
+  assert_int_equal(34, multihash_size);
   assert_true(cid == multihash);
   assert_memory_equal(cid, multihash, 34);
 }
@@ -67,10 +67,10 @@ static void cid_read_multihash_cidv0() {
 static void cid_read_multihash_cidv1() {
   uint8_t cid[] = {0x01, 0x01, 0x01, 0x01};
   const uint8_t* multihash = NULL;
-  size_t multihash_len = 0;
-  cid_err err = cid_read_multihash(cid, 4, &multihash, &multihash_len);
+  size_t multihash_size = 0;
+  cid_err err = cid_read_multihash(cid, 4, &multihash, &multihash_size);
   assert_string_equal("no error", CID_ERR_STRS[err]);
-  assert_int_equal(2, multihash_len);
+  assert_int_equal(2, multihash_size);
   assert_true(cid + 2 == multihash);
   assert_memory_equal(cid + 2, multihash, 2);
 }
@@ -78,16 +78,16 @@ static void cid_read_multihash_cidv1() {
 static void cid_read_multihash_cidv2() {
   uint8_t cid[] = {0x02, 0x02, 0x03};
   const uint8_t* multihash = NULL;
-  size_t multihash_len = 0;
-  cid_err err = cid_read_multihash(cid, 3, &multihash, &multihash_len);
+  size_t multihash_size = 0;
+  cid_err err = cid_read_multihash(cid, 3, &multihash, &multihash_size);
   assert_int_equal(CID_ERR_UNSUPPORTED_VERSION, err);
 }
 
 static void cid_read_multihash_invalid_version() {
   uint8_t cid[] = {0x08, 0x02, 0x02};
   const uint8_t* multihash = NULL;
-  size_t multihash_len = 0;
-  cid_err err = cid_read_multihash(cid, 3, &multihash, &multihash_len);
+  size_t multihash_size = 0;
+  cid_err err = cid_read_multihash(cid, 3, &multihash, &multihash_size);
   assert_int_equal(CID_ERR_INVALID_INPUT, err);
 }
 
