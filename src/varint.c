@@ -13,7 +13,7 @@ varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_size, uint64_t *c
   size_t size = 0;
   uint64_t v = 0;
   for (size_t i = 0; i < bytes_size && i < VARINT_UINT64_MAX_BYTES; i++) {
-    v |= (bytes[i] & 0x7f) << (7 * i);
+    v |= (bytes[i] & 0x7fU) << (7 * i);
     size++;
     if (!(bytes[i] & 0x80)) {
       if (val != NULL) {
@@ -33,7 +33,7 @@ varint_err uint64_to_varint(uint64_t n, uint8_t *const varint, size_t *const var
   for (size_t i = 0; i < VARINT_UINT64_MAX_BYTES; i++) {
     a += n >= 0x80;
     if (varint != NULL) {
-      varint[i] = n | 0x80;
+      varint[i] = (uint8_t)(n | 0x80);
     }
     n >>= 7;
   }

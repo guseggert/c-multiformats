@@ -20,6 +20,134 @@ static bool bytes_eql(const char* a, size_t a_size, const char* b, size_t b_size
   return true;
 }
 
+/**
+ * Converts a string-encoded uint32 to big-endian bytes.
+ */
+static ma_err uint32_str_to_bytes(const char* const str, const size_t str_len, uint8_t* bytes, size_t* bytes_size, uint32_t* num) {
+  // protect from overflow
+  if (str_len > 10) {
+    return MA_ERR_INVALID_INPUT;
+  }
+
+  uint64_t n = 0;
+  uint64_t place = 1;
+
+  // convert the string into an int
+  for (size_t i = 0; i < str_len; i++) {
+    char c = str[str_len - i - 1];
+    if (c < '0' || c > '9') {
+      return MA_ERR_INVALID_INPUT;
+    }
+    n += place * (uint8_t)(c - 48);
+    place *= 10;
+  }
+  if (n > UINT32_MAX) {
+    return MA_ERR_INVALID_INPUT;
+  }
+  if (num != NULL) {
+    *num = (uint32_t)n;
+  }
+
+  // chunk the int into big-endian bytes
+  size_t bytes_idx = 0;
+  for (size_t n_byte_idx = 0; n_byte_idx < 4; n_byte_idx++) {
+    size_t to_shift = 8 * (3 - n_byte_idx);
+    uint64_t b = (n & (0xffU << to_shift)) >> to_shift;
+    if (b == 0 && bytes_idx == 0) {
+      // find first non-zero byte
+      continue;
+    }
+    if (bytes != NULL) {
+      bytes[bytes_idx] = b & 0xff;
+    }
+    bytes_idx++;
+  }
+  if (bytes_size != NULL) {
+    *bytes_size = bytes_idx;
+  }
+  return MA_ERR_OK;
+}
+
+static ma_err uint32_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_t* str_len, uint32_t* num) {
+  if (bytes_size > 4) {
+    return MA_ERR_INVALID_INPUT;
+  }
+  uint32_t n = 0;
+  uint32_t place = 1;
+  for (size_t i = 0; i < bytes_size; i++) {
+    size_t idx = bytes_size - i - 1;
+    n += place * bytes[idx];
+    place *= 256;
+  }
+
+  if (num != NULL) {
+    *num = n;
+  }
+
+  // special case: "0"
+  if (n == 0) {
+    if (str_len != NULL) {
+      *str_len = 1;
+    }
+    if (str != NULL) {
+      str[0] = '0';
+    }
+    return MA_ERR_OK;
+  }
+
+  uint32_t cur_place = 1;
+  size_t num_digits = 0;
+  for (uint32_t cur_n = n; cur_n != 0; cur_place *= 10, num_digits++, cur_n /= 10) {
+    // nothing
+  }
+
+  uint32_t cur_n = n;
+  for (size_t cur_digit = 0; cur_digit < num_digits; cur_digit++, cur_place /= 10) {
+    if (str != NULL) {
+      str[cur_digit] = (char)((cur_n / (cur_place / 10)) + 48);
+      cur_n %= (cur_place / 10);
+    }
+  }
+  if (str_len != NULL) {
+    *str_len = num_digits;
+  }
+  return MA_ERR_OK;
+}
+
+static ma_err port_str_to_bytes(const struct proto* p, const char* const str, const size_t str_len, uint8_t* bytes, size_t* bytes_size) {
+  (void)p;
+  uint32_t n = 0;
+  ma_err err = uint32_str_to_bytes(str, str_len, bytes, bytes_size, &n);
+  if (err) {
+    return err;
+  }
+  if (n > 65535) {
+    return MA_ERR_INVALID_INPUT;
+  }
+  return MA_ERR_OK;
+}
+
+static ma_err port_validate_str(const struct proto* p, const char* const str, size_t str_len) {
+  return port_str_to_bytes(p, str, str_len, NULL, NULL);
+}
+
+static ma_err port_bytes_to_str(const struct proto* p, const uint8_t* bytes, size_t bytes_size, char* str, size_t* str_len) {
+  (void)p;
+  uint32_t n = 0;
+  ma_err err = uint32_bytes_to_str(bytes, bytes_size, str, str_len, &n);
+  if (err) {
+    return err;
+  }
+  if (n > 65535) {
+    return MA_ERR_INVALID_INPUT;
+  }
+  return MA_ERR_OK;
+}
+
+static ma_err port_validate_bytes(const struct proto* p, const uint8_t* bytes, size_t bytes_size) {
+  return port_bytes_to_str(p, bytes, bytes_size, NULL, NULL);
+}
+
 static ma_err identity_bytes_to_str(const struct proto* p, const uint8_t* const bytes, size_t bytes_size, char* str, size_t* str_len) {
   (void)p;
   if (str_len != NULL) {
@@ -50,6 +178,96 @@ static ma_err valid_validate_bytes(const struct proto* p, const uint8_t* bytes, 
   return MA_ERR_OK;
 }
 
+static ma_err valid_validate_str(const struct proto* p, const char* const str, size_t str_len) {
+  (void)p;
+  (void)str;
+  (void)str_len;
+  return MA_ERR_OK;
+}
+
+static ma_err ip4_str_to_bytes(const struct proto* p, const char* const str, const size_t str_len, uint8_t* bytes, size_t* bytes_size) {
+  (void)p;
+  if (bytes_size != NULL) {
+    *bytes_size = 4;
+  }
+
+  size_t cur_str_idx = 0;
+  size_t cur_str_len = str_len;
+  for (size_t i = 0; i < 4; i++) {
+    // missing an octet
+    if (cur_str_len == 0) {
+      return MA_ERR_INVALID_INPUT;
+    }
+    if (i > 0) {
+      if (str[cur_str_idx] != '.') {
+        return MA_ERR_INVALID_INPUT;
+      }
+      cur_str_idx++;
+      cur_str_len--;
+    }
+
+    // convert to a 16-byte int first, so we can tell if we would overflow an 8-byte int
+    uint16_t tmp_digit = 0;
+
+    size_t j = cur_str_idx;
+    for (; '0' <= str[j] && str[j] <= '9'; j++) {
+      // don't accept non-zero digits with leading zeros
+      if ((cur_str_idx - j) > 0 && str[cur_str_idx] == '0') {
+        return MA_ERR_INVALID_INPUT;
+      }
+      tmp_digit = (uint16_t)(tmp_digit * 10 + (uint8_t)str[j] - '0');
+      if (tmp_digit > 0xFF) {
+        return MA_ERR_INVALID_INPUT;
+      }
+    }
+
+    // no digit was read
+    if (j == cur_str_idx) {
+      return MA_ERR_INVALID_INPUT;
+    }
+
+    cur_str_len -= j - cur_str_idx;
+    cur_str_idx = j;
+
+    if (bytes != NULL) {
+      bytes[i] = (uint8_t)tmp_digit;
+    }
+  }
+
+  return MA_ERR_OK;
+}
+
+static ma_err ip4_validate_str(const struct proto* p, const char* const str, size_t str_len) {
+  return ip4_str_to_bytes(p, str, str_len, NULL, NULL);
+}
+
+static ma_err ip4_bytes_to_str(const struct proto* p, const uint8_t* const bytes, size_t bytes_size, char* str, size_t* str_len) {
+  (void)p;
+  if (bytes_size != 4) {
+    return MA_ERR_INVALID_INPUT;
+  }
+
+  // max size is xxx.xxx.xxx.xxx\0 = 16
+  char buf[16] = {0};
+  int chars = snprintf(buf, 16, "%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3]);
+  if (chars < 0 || chars >= 16) {
+    return MA_ERR_INVALID_INPUT;
+  }
+
+  if (str != NULL) {
+    memcpy(str, buf, (size_t)chars);
+  }
+  if (str_len != NULL) {
+    *str_len = (size_t)chars;
+  }
+
+  return MA_ERR_OK;
+}
+
+static ma_err ip4_validate_bytes(const struct proto* p, const uint8_t* const bytes, size_t bytes_size) {
+  return ip4_bytes_to_str(p, bytes, bytes_size, NULL, NULL);
+}
+
 const ma_proto ma_proto_unix = {
     .name = "unix",
     .name_len = 4,
@@ -62,6 +280,7 @@ const ma_proto ma_proto_unix = {
     .bytes_to_str = &identity_bytes_to_str,
     .str_to_bytes = &identity_str_to_bytes,
     .validate_bytes = &valid_validate_bytes,
+    .validate_str = &valid_validate_str,
     .next = NULL,
 };
 const ma_proto ma_proto_tcp = {
@@ -74,9 +293,10 @@ const ma_proto ma_proto_tcp = {
     .val_is_constant_size = true,
     .val_size = 16,
     .val_is_path = false,
-    .bytes_to_str = &identity_bytes_to_str,
-    .str_to_bytes = &identity_str_to_bytes,
-    .validate_bytes = &valid_validate_bytes,
+    .bytes_to_str = &port_bytes_to_str,
+    .str_to_bytes = &port_str_to_bytes,
+    .validate_bytes = &port_validate_bytes,
+    .validate_str = &port_validate_str,
     .next = &ma_proto_unix,
 };
 const ma_proto ma_proto_ip4 = {
@@ -88,9 +308,10 @@ const ma_proto ma_proto_ip4 = {
     .has_value = true,
     .val_size = 32,
     .val_is_path = false,
-    .bytes_to_str = &identity_bytes_to_str,
-    .str_to_bytes = &identity_str_to_bytes,
-    .validate_bytes = &valid_validate_bytes,
+    .bytes_to_str = &ip4_bytes_to_str,
+    .str_to_bytes = &ip4_str_to_bytes,
+    .validate_bytes = &ip4_validate_bytes,
+    .validate_str = &ip4_validate_str,
     .next = &ma_proto_tcp,
 };
 const ma_proto* protos = &ma_proto_ip4;  // NOLINT
@@ -132,7 +353,7 @@ ma_err ma_proto_by_code(const ma_proto_code code, const ma_proto** proto) {
   return MA_ERR_UNKNOWN_PROTOCOL;
 }
 
-static ma_err ma_bytes_comp_to_bytes(const ma_bytes_comp* const comp, uint8_t* const bytes, size_t* bytes_size) {
+static ma_err ma_bytes_encode_comp(const ma_bytes_comp* const comp, uint8_t* const bytes, size_t* bytes_size) {
   size_t idx = 0;
   const ma_proto* proto = NULL;
   ma_err err = ma_proto_by_code(comp->proto_code, &proto);
@@ -164,8 +385,8 @@ static ma_err ma_bytes_comp_to_bytes(const ma_bytes_comp* const comp, uint8_t* c
     } else {
       uint8_t varint[VARINT_UINT64_MAX_BYTES] = {0};
       size_t varint_size = 0;
-      varint_err err = uint64_to_varint(comp->value_size, varint, &varint_size);
-      if (err) {
+      varint_err verr = uint64_to_varint(comp->value_size, varint, &varint_size);
+      if (verr) {
         return MA_ERR_INVALID_INPUT;
       }
       if (bytes != NULL) {
@@ -188,7 +409,7 @@ ma_err ma_bytes_encode(const ma_bytes_comp* const comps, size_t comps_size, uint
   for (size_t i = 0; i < comps_size; i++) {
     size_t size = 0;
     uint8_t* comp_bytes = bytes == NULL ? NULL : bytes + idx;
-    ma_err err = ma_bytes_comp_to_bytes(&comps[i], comp_bytes, &size);
+    ma_err err = ma_bytes_encode_comp(&comps[i], comp_bytes, &size);
     if (err) {
       return err;
     }
@@ -281,7 +502,6 @@ ma_err ma_bytes_decode_next(ma_bytes_decoder* decoder, ma_bytes_comp* comp) {
 
   // if this was a path protocol, then we should be at the end
   if (proto->val_is_path && decoder->cur_byte != decoder->multiaddr_size) {
-    printf("%lu %lu %lu %lu\n", value_size, value_varint_size, decoder->cur_byte, decoder->multiaddr_size);
     return MA_ERR_INVALID_INPUT;
   }
 
@@ -290,17 +510,14 @@ ma_err ma_bytes_decode_next(ma_bytes_decoder* decoder, ma_bytes_comp* comp) {
 
 // Reads the next multiaddr element from a string.
 //
-// If the end of str is reached (null terminator), elem_start is set to null.
-//
 // This considers a multiaddr like '//' to be valid (in that case it will read two elements with elem_len=0).
-static ma_err next_str_elem(ma_str_decoder* const decoder, const char** elem_start, size_t* const elem_len) {
+static ma_err ma_str_decode_next_elem(ma_str_decoder* const decoder, const char** elem_start, size_t* const elem_len) {
+  if (decoder->done) {
+    return MA_ERR_INVALID_INPUT;
+  }
   size_t s_start = decoder->cur_char;
   const char* e_start = decoder->multiaddr + s_start;
 
-  if (e_start[0] == '\0') {
-    *elem_start = NULL;
-    return MA_ERR_OK;
-  }
   if (e_start[0] != '/') {
     return MA_ERR_INVALID_INPUT;
   }
@@ -317,25 +534,21 @@ static ma_err next_str_elem(ma_str_decoder* const decoder, const char** elem_sta
   *elem_len = size;
   decoder->cur_char = s_start;
 
+  //  if (e_start[0] == '\0') {
+  if (s_start == decoder->multiaddr_len) {
+    decoder->done = true;
+  }
+
   return MA_ERR_OK;
 }
 
 ma_err ma_str_decode_next(ma_str_decoder* const decoder, ma_str_comp* const comp) {
-  if (decoder->done) {
-    return MA_ERR_OK;
-  }
-
   char* elem_start = NULL;
   size_t elem_len = 0;
 
-  ma_err err = next_str_elem(decoder, (const char**)&elem_start, &elem_len);
+  ma_err err = ma_str_decode_next_elem(decoder, (const char**)&elem_start, &elem_len);
   if (err) {
     return err;
-  }
-  // there are no more elements, we've reached the end of the multiaddr
-  if (elem_start == NULL) {
-    decoder->done = true;
-    return MA_ERR_OK;
   }
 
   // lookup the protocol
@@ -361,27 +574,33 @@ ma_err ma_str_decode_next(ma_str_decoder* const decoder, ma_str_comp* const comp
     comp->value = elem_start + elem_len;
     comp->value_len = decoder->multiaddr_len - decoder->cur_char;
     decoder->cur_char = decoder->multiaddr_len;
-    return MA_ERR_OK;
+    decoder->done = true;
+  } else {
+    // there must be another element at this point, so read it
+    err = ma_str_decode_next_elem(decoder, (const char**)&elem_start, &elem_len);
+    if (err) {
+      return err;
+    }
+    comp->value = elem_start;
+    comp->value_len = elem_len;
   }
 
-  // there must be another element at this point, so read it
-  err = next_str_elem(decoder, (const char**)&elem_start, &elem_len);
+  err = proto->validate_str(proto, comp->value, comp->value_len);
   if (err) {
     return err;
   }
-  if (elem_start == NULL) {
-    return MA_ERR_INVALID_INPUT;
-  }
-
-  comp->value = elem_start;
-  comp->value_len = elem_len;
 
   return MA_ERR_OK;
 }
 
-ma_err ma_str_comp_to_str(const ma_str_comp* const comp, char* const str, size_t* str_len) {
+static ma_err ma_str_encode_comp(const ma_str_comp* const comp, char* const str, size_t* str_len) {
   const ma_proto* proto = NULL;
   ma_err err = ma_proto_by_code(comp->proto_code, &proto);
+  if (err) {
+    return err;
+  }
+
+  err = proto->validate_str(proto, comp->value, comp->value_len);
   if (err) {
     return err;
   }
@@ -426,7 +645,7 @@ ma_err ma_str_encode(const ma_str_comp* comps, size_t comps_size, char* str, siz
   for (size_t i = 0; i < comps_size; i++) {
     size_t len = 0;
     char* comp_str = str == NULL ? NULL : str + idx;
-    ma_err err = ma_str_comp_to_str(&comps[i], comp_str, &len);
+    ma_err err = ma_str_encode_comp(&comps[i], comp_str, &len);
     if (err) {
       return err;
     }
@@ -443,14 +662,11 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
   ma_str_decoder decoder = {.multiaddr = str, .multiaddr_len = str_len};
   ma_str_comp cur_comp = {0};
   size_t bytes_idx = 0;
-  while (1) {
+  while (!decoder.done) {
     // read next component
     ma_err err = ma_str_decode_next(&decoder, &cur_comp);
     if (err) {
       return err;
-    }
-    if (decoder.done) {
-      continue;
     }
 
     // lookup the protocol
@@ -477,8 +693,8 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
       proto->str_to_bytes(proto, cur_comp.value, cur_comp.value_len, NULL, &size);
       size_t varint_size = 0;
       uint8_t varint[VARINT_UINT64_MAX_BYTES];
-      varint_err err = uint64_to_varint(size, varint, &varint_size);
-      if (err) {
+      varint_err verr = uint64_to_varint(size, varint, &varint_size);
+      if (verr) {
         return MA_ERR_INVALID_INPUT;
       }
       if (bytes != NULL) {
@@ -502,6 +718,8 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
   if (bytes_size != NULL) {
     *bytes_size = bytes_idx;
   }
+
+  return MA_ERR_OK;
 }
 
 ma_err ma_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_t* str_len) {

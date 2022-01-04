@@ -12,10 +12,11 @@
 #ifndef __clang_analyzer__
 
 static void mb_test_encode(char* input, size_t input_size, mb_enc encoding, char* expected, size_t expected_size, mb_err expected_err) {
-  printf("TEST encode input=");
+  printf("TEST encode input='");
   for (unsigned long i = 0; i < strlen(input); i++) {
-    printf("%02hhX", input[i]);
+    printf("%hhx", input[i]);
   }
+  printf("'");
   const char* encoding_name = NULL;
   mb_err enc_name_err = mb_enc_name(encoding, &encoding_name);
   if (enc_name_err) {
@@ -101,6 +102,33 @@ static void mb_decode_base2_test() {
   mb_test_decode("001111001011001010111001100100000011011010110000101101110011010010010000000100001", 81, "yes mani !", 10, 0);
 }
 
+static void mb_encode_base10_test() {
+  mb_test_encode("yes mani !", 10, MB_ENC_BASE10, "9573277761329450583662625", 25, 0);
+  mb_test_encode("\x00yes mani !", 11, MB_ENC_BASE10, "90573277761329450583662625", 26, 0);
+  mb_test_encode("\x00\x00yes mani !", 12, MB_ENC_BASE10, "900573277761329450583662625", 27, 0);
+  mb_test_encode("\xff", 1, MB_ENC_BASE10, "9255", 4, 0);
+  mb_test_encode("\xff\xff", 2, MB_ENC_BASE10, "965535", 6, 0);
+  mb_test_encode("\x01\x00", 2, MB_ENC_BASE10, "9256", 4, 0);
+  mb_test_encode("\x01\xff", 2, MB_ENC_BASE10, "9511", 4, 0);
+  mb_test_encode("\xff\xff\xff", 3, MB_ENC_BASE10, "916777215", 9, 0);
+}
+
+static void mb_decode_base10_test() {
+  mb_test_decode("9", 1, "", 0, 0);
+  mb_test_decode("90", 2, "\x00", 1, 0);
+  mb_test_decode("9573277761329450583662625", 25, "yes mani !", 10, 0);
+  mb_test_decode("90573277761329450583662625", 26, "\x00yes mani !", 11, 0);
+  mb_test_decode("900573277761329450583662625", 27, "\x00\x00yes mani !", 12, 0);
+  mb_test_decode("9255", 4, "\xff", 1, 0);
+  mb_test_decode("965535", 6, "\xff\xff", 2, 0);
+  mb_test_decode("9256", 4, "\x01\x00", 2, 0);
+  mb_test_decode("9511", 4, "\x01\xff", 2, 0);
+  mb_test_decode("916777215", 9, "\xff\xff\xff", 3, 0);
+  mb_test_decode("96553600", 8, "\x64\x00\x00", 3, 0);
+  mb_test_decode("99670086", 8, "\x93\x8d\xc6", 3, 0);
+}
+
+
 static void mb_encode_base64_test() {
   mb_test_encode("yes mani !", 10, MB_ENC_BASE64, "meWVzIG1hbmkgIQ", 15, 0);
   mb_test_encode("\x00yes mani !", 11, MB_ENC_BASE64, "mAHllcyBtYW5pICE", 16, 0);
@@ -111,6 +139,7 @@ static void mb_encode_base64_test() {
   mb_test_encode("\x8a\xa0\x2a\xd7", 4, MB_ENC_BASE64, "miqAq1w", 7, 0);
   mb_test_encode("\x2b", 1, MB_ENC_BASE64, "mKw", 3, 0);
 }
+
 static void mb_decode_base64_test() {
   mb_test_decode("mKw", 3, "\x2b", 1, 0);
   mb_test_decode("mAQ", 3, "\x01", 1, 0);
@@ -259,6 +288,8 @@ __attribute__((unused)) static void add_multibase_tests() {
   add_test(mb_decode_identity_test);
   add_test(mb_encode_base2_test);
   add_test(mb_decode_base2_test);
+  add_test(mb_encode_base10_test);
+  add_test(mb_decode_base10_test);
   add_test(mb_encode_base16_test);
   add_test(mb_decode_base16_test);
   add_test(mb_encode_base16upper_test);

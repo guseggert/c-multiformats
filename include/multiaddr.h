@@ -9,18 +9,12 @@ typedef enum {
   MA_ERR_OK = 0,
   MA_ERR_UNKNOWN_PROTOCOL,
   MA_ERR_INVALID_INPUT,
-  MA_ERR_INVALID_INPUT_EMPTY,
-  MA_ERR_INVALID_INPUT_BEGIN_SLASH,
-  MA_ERR_MEMORY,
 } ma_err;
 
 static const char* const MA_ERR_STRS[] = {
     "no error",
     "unknown protocol",
     "invalid multiaddr input",
-    "invalid multiaddr input: empty",
-    "invalid multiaddr input: must begin with /",
-    "multiaddr memory error",
 };
 
 typedef uint64_t ma_proto_code;
@@ -69,6 +63,7 @@ const ma_proto_code MA_PROTO_CODE_UNIX = 0x0190;
 // - <varint_protocol_code><value_bytes>  (constant-size value)
 // - <varint_protocol_code><varint_value_size><value_bytes>  (variable-size value)
 //
+// When relevant, bytes are always output with big endian encoding, and input assumes big endian encoding.
 //
 // This implementation is organized into a set of functions for byte-encoded multiaddrs,
 // functions for string-encoded multiaddrs, and functions to convert between the two. This
@@ -101,8 +96,11 @@ typedef struct proto {
   ma_err (*const str_to_bytes)(const struct proto* p, const char* str, size_t str_len, uint8_t* bytes, size_t* bytes_size);
   // Converts a byte-encoded component value to a string-encoded component value
   ma_err (*const bytes_to_str)(const struct proto* p, const uint8_t* bytes, size_t bytes_size, char* str, size_t* str_len);
-  // Validate the given component value for the given protocol
+  // Validate the given byte component value for the given protocol
   ma_err (*const validate_bytes)(const struct proto* p, const uint8_t* bytes, size_t bytes_size);
+  // Validate the given string component value for the given protocol
+  ma_err (*const validate_str)(const struct proto* p, const char* str, size_t str_len);
+
 } ma_proto;
 
 extern const ma_proto ma_proto_unix;

@@ -1,8 +1,8 @@
-#include <stdint.h>
-#include <stdlib.h>
-
 #ifndef VARINT_H
 #define VARINT_H
+
+#include <stdint.h>
+#include <stdlib.h>
 
 typedef enum {
   VARINT_ERR_OK = 0,

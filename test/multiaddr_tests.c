@@ -24,28 +24,25 @@ static void test_ma_str_decode_next(const char* name, const char* multiaddr, ma_
   va_list args;
 
   va_start(args, comps_len);
-  for (size_t i = 0; i < comps_len; i++) {
+
+  size_t i = 0;
+  while (!decoder.done && err == MA_ERR_OK) {
     printf("\tcomp %lu\n", i);
-    ma_str_comp expected_comp = va_arg(args, ma_str_comp);
-    ma_err cur_err = ma_str_decode_next(&decoder, &cur_comp);
-    // store the first non-ok error we encounter
-    if (err == MA_ERR_OK) {
-      err = cur_err;
+    err = ma_str_decode_next(&decoder, &cur_comp);
+    if (err != MA_ERR_OK) {
+      break;
     }
+    ma_str_comp expected_comp = va_arg(args, ma_str_comp);
     assert_int_equal(expected_comp.proto_code, cur_comp.proto_code);
     assert_int_equal(expected_comp.value_len, cur_comp.value_len);
     assert_memory_equal(expected_comp.value, cur_comp.value, expected_comp.value_len);
+    i++;
   }
+
   va_end(args);
 
-  // in happy cases, this should set decoder.done=true
-  ma_err cur_err = ma_str_decode_next(&decoder, &cur_comp);
-  if (err == MA_ERR_OK) {
-    err = cur_err;
-  }
-
+  assert_int_equal(i, comps_len);
   assert_int_equal(expected_err, err);
-
   if (expected_err == MA_ERR_OK) {
     assert_true(decoder.done);
   }
@@ -58,22 +55,17 @@ static void ma_str_decode_next_tests() {
                           1,
                           (ma_str_comp){.proto_code = MA_PROTO_CODE_UNIX, .value = "/foo/bar", .value_len = 8});
   test_ma_str_decode_next("decoding a non-path protocol should work",
-                          "/ip4/addr1",
+                          "/ip4/100.100.100.100",
                           MA_ERR_OK,
                           1,
-                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "addr1", .value_len = 5});
-  test_ma_str_decode_next("decoding a non-path protocol with an empty value should decode an empty string",
-                          "/ip4/",
-                          MA_ERR_OK,
-                          1,
-                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "", .value_len = 0});
+                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "100.100.100.100", .value_len = 15});
   test_ma_str_decode_next("decoding [non-path, path, non-path] should only result in two components",
-                          "/ip4/addr1/unix/foo/bar/ip4/add2",
+                          "/ip4/1.1.1.1/unix/foo/bar/ip4/1.1.1.1",
                           MA_ERR_OK,
                           2,
-                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "addr1", .value_len = 5},
-                          (ma_str_comp){.proto_code = MA_PROTO_CODE_UNIX, .value = "/foo/bar/ip4/add2", .value_len = 17});
-  test_ma_str_decode_next("decoding an empty string should return no components without error", "", MA_ERR_OK, 0);
+                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "1.1.1.1", .value_len = 7},
+                          (ma_str_comp){.proto_code = MA_PROTO_CODE_UNIX, .value = "/foo/bar/ip4/1.1.1.1", .value_len = 20});
+  test_ma_str_decode_next("decoding an empty string should return an error", "", MA_ERR_INVALID_INPUT, 0);
 
   // error cases
   test_ma_str_decode_next("decoding a protocol with a missing value should return an error", "/ip4", MA_ERR_INVALID_INPUT, 0);
@@ -83,10 +75,10 @@ static void ma_str_decode_next_tests() {
                           MA_ERR_UNKNOWN_PROTOCOL,
                           0);
   test_ma_str_decode_next("decoding a subsequent component with a missing value should return an error",
-                          "/ip4/addr/ip4",
+                          "/ip4/254.254.254.254/ip4",
                           MA_ERR_INVALID_INPUT,
                           1,
-                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "addr", .value_len = 4});
+                          (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "254.254.254.254", .value_len = 15});
 }
 
 static void test_ma_str_encode(const char* name, const char* expected_str, ma_err expected_err, size_t comps_len, ...) {
@@ -118,18 +110,40 @@ static void test_ma_str_encode(const char* name, const char* expected_str, ma_er
   free(comps);
 }
 
-static void ma_str_comps_tests() {
+static void ma_str_encode_tests() {
   test_ma_str_encode("encoding a single protocol should work",
-                     "/ip4/addr1",
+                     "/ip4/1.1.1.1",
                      MA_ERR_OK,
                      1,
-                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "addr1", .value_len = 5});
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "1.1.1.1", .value_len = 7});
   test_ma_str_encode("encoding a protocol followed by path protocol should work",
-                     "/ip4/addr1/unix/foo/bar",
+                     "/ip4/127.0.0.1/unix/foo/bar",
                      MA_ERR_OK,
                      2,
-                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "addr1", .value_len = 5},
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "127.0.0.1", .value_len = 9},
                      (ma_str_comp){.proto_code = MA_PROTO_CODE_UNIX, .value = "/foo/bar", .value_len = 8});
+  test_ma_str_encode("ip4: should reject a single leading zero",
+                     "",
+                     MA_ERR_INVALID_INPUT,
+                     1,
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "1.1.01.1", .value_len = 8});
+  test_ma_str_encode("ip4: should reject multiple leading zeros",
+                     "",
+                     MA_ERR_INVALID_INPUT,
+                     1,
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "0000.0.0.0", .value_len = 10});
+  test_ma_str_encode("ip4: should accept max value",
+                     "/ip4/255.255.255.255",
+                     MA_ERR_OK,
+                     1,
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "255.255.255.255", .value_len = 15});
+
+  test_ma_str_encode("ip4: should accept zero values",
+                     "/ip4/0.0.0.0",
+                     MA_ERR_OK,
+                     1,
+                     (ma_str_comp){.proto_code = MA_PROTO_CODE_IP4, .value = "0.0.0.0", .value_len = 7});
+
   test_ma_str_encode("encoding no components should produce an empty string", "", MA_ERR_OK, 0);
   test_ma_str_encode("encoding a component with an unknown protocol id should return an error",
                      "",
@@ -155,8 +169,8 @@ static void test_ma_bytes_decode_next(const char* name, const uint8_t* bytes, si
   for (size_t i = 0; i < comps_len; i++) {
     printf("\tcomp %lu\n", i);
     ma_bytes_comp expected_comp = va_arg(args, ma_bytes_comp);
-    ma_err err = ma_bytes_decode_next(&decoder, &cur_comp);
-    assert_int_equal(expected_err, err);
+    ma_err maerr = ma_bytes_decode_next(&decoder, &cur_comp);
+    assert_int_equal(expected_err, maerr);
     assert_int_equal(expected_comp.proto_code, cur_comp.proto_code);
     assert_int_equal(expected_comp.value_size, cur_comp.value_size);
     assert_memory_equal(expected_comp.value, cur_comp.value, expected_comp.value_size);
@@ -222,41 +236,6 @@ static void ma_bytes_decode_next_tests() {
 
 /* ma_err ma_proto_by_code(ma_proto_code code, const ma_proto** proto); */
 
-/* static void ma_bytes_next_comp_test() { */
-/*   uint8_t unix_val[1] = {'a'}; */
-/*   ma_bytes_comp comp = {.proto_code = MA_PROTO_CODE_UNIX, .value = unix_val, .value_size = 1}; */
-
-/*   size_t bytes_size = 0; */
-/*   ma_err err = ma_bytes_comps(&comp, 1, NULL, &bytes_size); */
-/*   assert_int_equal(0, err); */
-
-/*   uint8_t* bytes = calloc(bytes_size, sizeof(uint8_t)); */
-/*   err = ma_bytes_comps(&comp, 1, bytes, &bytes_size); */
-/*   assert_int_equal(0, err); */
-/*   assert_int_equal(4, bytes_size); */
-
-/*   for (size_t i = 0; i < bytes_size; i++) { */
-/*     printf("%0X ", bytes[i]); */
-/*   } */
-/*   printf("\n"); */
-
-/*   ma_bytes_parser parser = {.multiaddr = bytes, .multiaddr_size = 4}; */
-/*   ma_bytes_comp cur_comp = {0}; */
-/*   err = ma_bytes_next_comp(&parser, &cur_comp); */
-/*   assert_int_equal(0, err); */
-
-/*   assert_int_equal(comp.proto_code, cur_comp.proto_code); */
-/*   //  assert_int_equal(comp.value_size, cur_comp.value_size); */
-/*   //  assert_memory_equal(comp.value, cur_comp.value, comp.value_size); */
-/*   assert_false(parser.done); */
-
-/*   err = ma_bytes_next_comp(&parser, &cur_comp); */
-/*   assert_int_equal(0, err); */
-/*   assert_true(parser.done); */
-
-/*   free(bytes); */
-/* } */
-
 static void ma_verify_protocols_tests() {
   uint8_t varint[VARINT_UINT64_MAX_BYTES];
   size_t varint_size = 0;
@@ -275,7 +254,7 @@ static void ma_verify_protocols_tests() {
 }
 
 __attribute__((unused)) static void add_multiaddr_tests() {
-  add_test(ma_str_comps_tests);
+  add_test(ma_str_encode_tests);
   add_test(ma_str_decode_next_tests);
   add_test(ma_bytes_decode_next_tests);
   add_test(ma_verify_protocols_tests);

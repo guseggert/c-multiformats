@@ -20,8 +20,8 @@ static cid_err cid_read_version_varint(const uint8_t* const bytes, size_t bytes_
     }
     return CID_ERR_OK;
   }
-  varint_err varint_err = varint_to_uint64(bytes, bytes_size, version_varint, bytes_read);
-  if (varint_err) {
+  varint_err verr = varint_to_uint64(bytes, bytes_size, version_varint, bytes_read);
+  if (verr) {
     return CID_ERR_INVALID_INPUT;
   }
   return CID_ERR_OK;
@@ -45,8 +45,8 @@ static cid_err cid_read_content_type_varint(const uint8_t* const bytes, size_t b
   if (version == 1) {
     uint64_t multicodec_varint = 0;
     size_t multicodec_varint_size = 0;
-    varint_err varint_err = varint_to_uint64(bytes, bytes_size, &multicodec_varint, &multicodec_varint_size);
-    if (varint_err) {
+    varint_err verr = varint_to_uint64(bytes, bytes_size, &multicodec_varint, &multicodec_varint_size);
+    if (verr) {
       return CID_ERR_INVALID_INPUT;
     }
     if (content_type != NULL) {

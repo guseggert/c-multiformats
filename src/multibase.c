@@ -5,10 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "multiaddr.h"
+
 typedef struct {
   char* name;
-  mb_err (*encode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size);
-  mb_err (*decode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size);
+  mb_err (*encode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                   size_t* const result_size);
+  mb_err (*decode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                   size_t* const result_size);
   size_t (*encode_size)(const uint8_t* const input, size_t input_size);
   size_t (*decode_size)(const uint8_t* const input, size_t input_size);
   mb_enc enc;
@@ -19,11 +23,12 @@ size_t mb_base2_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
   return input_size * 8;
 }
-mb_err mb_base2_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base2_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                       size_t* const result_size) {
   (void)result_buf_size;
   for (size_t i = 0; i < input_size; i++) {
     uint8_t b = input[i];
-    for (char j = 7; j >= 0; j--) {
+    for (unsigned char j = 7; j <= 7; j--) {
       size_t idx = i * 8 + j;
       result_buf[idx] = '0' + ((b >> (7 - j)) & 1);
     }
@@ -36,16 +41,17 @@ size_t mb_base2_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
   return (input_size + 7) / 8;
 }
-mb_err mb_base2_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base2_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                       size_t* const result_size) {
   (void)result_buf_size;
   size_t res_idx = 0;
   for (size_t i = 0; i < input_size; i++) {
-    unsigned char cur_res_bit_num = i % 8;
+    uint8_t cur_res_bit_num = i % 8;
     uint8_t res_byte = input[i] - '0';
     if (res_byte > 1) {
       return MB_ERR_INVALID_INPUT;
     }
-    result_buf[res_idx] |= (res_byte << (7U - cur_res_bit_num));
+    result_buf[res_idx] |= (uint8_t)(res_byte << (7U - cur_res_bit_num));
 
     if (cur_res_bit_num == 7) {
       res_idx++;
@@ -55,11 +61,127 @@ mb_err mb_base2_decode(const uint8_t* const input, size_t input_size, uint8_t* c
   return MB_ERR_OK;
 }
 
+size_t mb_base10_encode_size(const uint8_t* const input, size_t input_size) {
+  // this is approximate, sometimes it can be overshoot by 1 byte
+  size_t zeros = 0;
+  while (zeros < input_size && !input[zeros]) {
+    zeros++;
+  }
+  return ((input_size - zeros) * 242 / 100 + 1) + zeros;
+}
+
+mb_err mb_base10_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
+  // the implementation of base10 is very similar to base58, leading zeros are treated specially to preserve zero-byte padding
+  size_t num_zeros = 0;
+
+  while (num_zeros < input_size && input[num_zeros] == 0) {
+    result_buf[num_zeros] = '0';
+    num_zeros++;
+  }
+
+  size_t high = result_buf_size;
+  uint16_t carry = 0;
+  size_t j = 0;
+  for (size_t i = num_zeros; i < input_size; i++, high = j) {
+    carry = input[i];
+    for (j = result_buf_size - 1; (j >= high) || carry; j--) {
+      // in this loop, the max val of carry is 256 * 10 = 2560
+      carry += (uint16_t)(256 * result_buf[j]);
+      result_buf[j] = (uint8_t)(carry % 10);
+      carry /= 10;
+      if (!j) {
+        break;
+      }
+    }
+  }
+
+  // find the start of the non-zero section
+  size_t b10_bytes_idx = num_zeros;
+  for (; b10_bytes_idx < result_buf_size && !result_buf[b10_bytes_idx]; b10_bytes_idx++) {
+    // nothing
+  }
+
+  // then swap everything left as necessary
+  size_t unused = b10_bytes_idx - num_zeros;
+  size_t i = b10_bytes_idx;
+
+  for (; i < result_buf_size; i++) {
+    result_buf[i - unused] = result_buf[i] + 48;
+  }
+  *result_size = i - unused;
+
+  return MB_ERR_OK;
+}
+
+size_t mb_base10_decode_size(const uint8_t* const input, size_t input_size) {
+  // this is approximate, sometimes it can overshoot by 1 byte
+  size_t zeros = 0;
+  while (zeros < input_size && input[zeros] == '0') {
+    zeros++;
+  }
+  return ((input_size - zeros) * 416 / 1000 + 1) + zeros;
+}
+
+mb_err mb_base10_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
+  if (input_size == 0) {
+    return MB_ERR_OK;
+  }
+
+  size_t num_zeros = 0;
+  while (num_zeros < input_size && input[num_zeros] == '0') {
+    num_zeros++;
+  }
+
+  size_t high = result_buf_size;
+  uint32_t carry = 0;
+  size_t j = 0;
+  for (size_t i = num_zeros; i < input_size; i++, high = j) {
+    if (input[i] < '0' || input[i] > '9') {
+      return MB_ERR_INVALID_INPUT;
+    }
+    carry = input[i] - 48;
+    for (j = result_buf_size - 1; (j >= high) || carry; j--) {
+      // in this loop, the max val of carry is 10 * 256 = 2560
+      carry += (uint32_t)(10 * (uint32_t)result_buf[j]);
+      result_buf[j] = (uint8_t)(carry % 256);
+      // want 102, got 12
+      carry /= 256;
+      if (!j) {
+        break;
+      }
+    }
+  }
+
+  // write zeros
+  if (num_zeros > 0) {
+    memset(result_buf, 0, num_zeros);
+  }
+
+  // find the first non-zero byte of the buf
+  size_t b10_bytes_idx = 0;
+  for (; b10_bytes_idx < result_buf_size && !result_buf[b10_bytes_idx]; b10_bytes_idx++) {
+    // nothing
+  }
+
+  // swap left as necessary
+  size_t i = num_zeros;
+  for (; b10_bytes_idx < result_buf_size; i++, b10_bytes_idx++) {
+    result_buf[i] = result_buf[b10_bytes_idx];
+  }
+
+  *result_size = i;
+
+  return MB_ERR_OK;
+}
+
 size_t mb_identity_encode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
   return input_size;
 }
-mb_err mb_identity_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_identity_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                          size_t* const result_size) {
   (void)result_buf_size;
   memcpy(result_buf, input, input_size);
   *result_size = input_size;
@@ -70,7 +192,8 @@ size_t mb_identity_decode_size(const uint8_t* const input, size_t input_size) {
   (void)input;
   return input_size;
 }
-mb_err mb_identity_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_identity_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                          size_t* const result_size) {
   (void)result_buf_size;
   return mb_identity_encode(input, input_size, result_buf, result_buf_size, result_size);
 }
@@ -99,12 +222,12 @@ mb_err mb_base64_decode_lookup(const char* lookup, const uint8_t* const input, s
 
     // stick the 6 bits onto the accumulator
     bit_accum <<= 6;
-    bit_accum |= ch & 63;
+    bit_accum = (uint16_t)(bit_accum | (ch & 63));
     bit_accum_bits += 6;
 
     // if there's a byte in accumulator, add it to result
     if (bit_accum_bits >= 8) {
-      uint8_t b = (bit_accum & (0xFF << (bit_accum_bits - 8))) >> (bit_accum_bits - 8);
+      uint8_t b = (uint8_t)((bit_accum & (0xFF << (bit_accum_bits - 8))) >> (bit_accum_bits - 8));
       result[res_idx++] = b;
       bit_accum_bits -= 8;
     }
@@ -132,16 +255,16 @@ mb_err mb_base64_encode_alphabet(const char* const alphabet, const uint8_t* cons
   for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     // read off a byte from the input
     bit_accum <<= 8;
-    bit_accum |= input[input_idx];
+    bit_accum = (uint16_t)(bit_accum | input[input_idx]);
     bit_accum_bits += 8;
 
     while (bit_accum_bits >= 6) {
       // read off top 6 bits, leave the rest
       // 63=111111, and we want the top 6 bits
-      uint8_t next_6_bits = (bit_accum & (63 << (bit_accum_bits - 6))) >> (bit_accum_bits - 6);
+      uint8_t next_6_bits = (uint8_t)((bit_accum & (63 << (bit_accum_bits - 6))) >> (bit_accum_bits - 6));
       // top bits are garbage at this point
       bit_accum_bits -= 6;
-      result[res_idx++] = alphabet[next_6_bits];
+      result[res_idx++] = (uint8_t)alphabet[next_6_bits];
     }
   }
   // if there's leftover stuff, stick it in the last byte
@@ -150,8 +273,8 @@ mb_err mb_base64_encode_alphabet(const char* const alphabet, const uint8_t* cons
   // so we know we only need to read at most 6 bits from the accum
   if (bit_accum_bits > 0) {
     // take whatever's left, pad it to the right with zeros if it's <6 bits
-    uint8_t rest = (bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (6 - bit_accum_bits);
-    result[res_idx++] = alphabet[rest];
+    uint8_t rest = (uint8_t)((bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (6 - bit_accum_bits));
+    result[res_idx++] = (uint8_t)alphabet[rest];
   }
   *result_size = res_idx;
 
@@ -169,22 +292,23 @@ mb_err mb_base32_encode_alphabet(const char* const alphabet, const uint8_t* cons
   uint8_t bit_accum_bits = 0;
   for (size_t input_idx = 0; input_idx < input_size; input_idx++) {
     bit_accum <<= 8;
-    bit_accum |= input[input_idx];
+    bit_accum = (uint16_t)(bit_accum | input[input_idx]);
     bit_accum_bits += 8;
     while (bit_accum_bits >= 5) {
-      uint8_t next_5_bits = (bit_accum & (31 << (bit_accum_bits - 5))) >> (bit_accum_bits - 5);
+      uint8_t next_5_bits = (uint8_t)((bit_accum & (31 << (bit_accum_bits - 5))) >> (bit_accum_bits - 5));
       bit_accum_bits -= 5;
-      result[res_idx++] = alphabet[next_5_bits];
+      result[res_idx++] = (uint8_t)alphabet[next_5_bits];
     }
   }
   if (bit_accum_bits > 0) {
-    uint8_t rest = (bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (5 - bit_accum_bits);
-    result[res_idx++] = alphabet[rest];
+    uint8_t rest = (uint8_t)((bit_accum & (UINT16_MAX >> (16 - bit_accum_bits))) << (5 - bit_accum_bits));
+    result[res_idx++] = (uint8_t)alphabet[rest];
   }
   *result_size = res_idx;
   return MB_ERR_OK;
 }
-mb_err mb_base32_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base32_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
   return mb_base32_encode_alphabet("abcdefghijklmnopqrstuvwxyz234567", input, input_size, result_buf, result_size);
 }
@@ -211,11 +335,11 @@ mb_err mb_base32_decode_lookup(const char* lookup, const uint8_t* const input, s
       return MB_ERR_INVALID_INPUT;
     }
     bit_accum <<= 5;
-    bit_accum |= ch & 31;
+    bit_accum = (uint16_t)(bit_accum | (ch & 31));
     bit_accum_bits += 5;
 
     if (bit_accum_bits >= 8) {
-      uint8_t b = (bit_accum & (0xFF << (bit_accum_bits - 8))) >> (bit_accum_bits - 8);
+      uint8_t b = (uint8_t)((bit_accum & (0xFF << (bit_accum_bits - 8))) >> (bit_accum_bits - 8));
       result_buf[res_idx++] = b;
       bit_accum_bits -= 8;
     }
@@ -226,7 +350,8 @@ mb_err mb_base32_decode_lookup(const char* lookup, const uint8_t* const input, s
   *result_size = res_idx;
   return MB_ERR_OK;
 }
-mb_err mb_base32_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base32_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
@@ -272,11 +397,14 @@ mb_err mb_base32upper_decode(const uint8_t* const input, size_t input_size, uint
   return mb_base32_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-mb_err mb_base64_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base64_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
-  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", input, input_size, result_buf, result_size);
+  return mb_base64_encode_alphabet(
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", input, input_size, result_buf, result_size);
 }
-mb_err mb_base64_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base64_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
@@ -299,11 +427,14 @@ mb_err mb_base64_decode(const uint8_t* const input, size_t input_size, uint8_t* 
   return mb_base64_decode_lookup(lookup, input, input_size, result_buf, result_size);
 }
 
-mb_err mb_base64url_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base64url_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                           size_t* const result_size) {
   (void)result_buf_size;
-  return mb_base64_encode_alphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", input, input_size, result_buf, result_size);
+  return mb_base64_encode_alphabet(
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", input, input_size, result_buf, result_size);
 }
-mb_err mb_base64url_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base64url_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                           size_t* const result_size) {
   (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
@@ -334,13 +465,14 @@ mb_err mb_base16_encode_alphabet(const char* const alphabet, const uint8_t* cons
                                  size_t* const result_size) {
   for (size_t i = 0, j = 0; i < input_size; i++, j += 2) {
     uint8_t b = input[i];
-    result_buf[j] = alphabet[(b >> 4) & 0xf];
-    result_buf[j + 1] = alphabet[b & 0xf];
+    result_buf[j] = (uint8_t)alphabet[(b >> 4) & 0xf];
+    result_buf[j + 1] = (uint8_t)alphabet[b & 0xf];
   }
   *result_size = input_size * 2;
   return MB_ERR_OK;
 }
-mb_err mb_base16_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base16_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
   return mb_base16_encode_alphabet("0123456789abcdef", input, input_size, result_buf, result_size);
 }
@@ -360,13 +492,14 @@ mb_err mb_base16_decode_lookup(const char* const lookup, const uint8_t* const in
     return MB_ERR_INVALID_INPUT;
   }
   for (size_t i = 0, j = 0; i < input_size; i += 2, j++) {
-    result_buf[j] |= lookup[input[i]] << 4;
-    result_buf[j] |= lookup[input[i + 1]];
+    result_buf[j] = (uint8_t)(result_buf[j] | (lookup[input[i]] << 4));
+    result_buf[j] = (uint8_t)(result_buf[j] | (lookup[input[i + 1]]));
   }
   *result_size = input_size / 2;
   return MB_ERR_OK;
 }
-mb_err mb_base16_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base16_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                        size_t* const result_size) {
   (void)result_buf_size;
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
@@ -422,7 +555,8 @@ size_t mb_base58btc_encode_size(const uint8_t* const input, size_t input_size) {
 }
 
 // reference: https://tools.ietf.org/id/draft-msporny-base58-01.html
-mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                           size_t* const result_size) {
   if (input_size == 0) {
     return MB_ERR_OK;
   }
@@ -436,13 +570,14 @@ mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_
   }
 
   size_t high = result_buf_size;
-  int carry = 0;
+  uint16_t carry = 0;
   size_t j = 0;
   for (size_t i = num_zeros; i < input_size; i++, high = j) {
     carry = input[i];
-    for (j = result_buf_size - 1; (j > high) || carry; j--) {
-      carry += 256 * result_buf[j];
-      result_buf[j] = carry % 58;
+    for (j = result_buf_size - 1; (j >= high) || carry; j--) {
+      // in this loop, max val of carry is 256 * 58 = 14848
+      carry += (uint16_t)(256 * result_buf[j]);
+      result_buf[j] = (uint8_t)(carry % 58);
       carry /= 58;
       if (!j) {
         break;
@@ -450,7 +585,7 @@ mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_
     }
   }
 
-  // there could be extra zeros to the left of the result, so swap left if necessary
+  // there could be extra zeros to the left of the result, so swap left if necessaryo
 
   // find the start of the non-zero section
   size_t b58_bytes_idx = num_zeros;
@@ -462,7 +597,7 @@ mb_err mb_base58btc_encode(const uint8_t* const input, size_t input_size, uint8_
   size_t unused = b58_bytes_idx - num_zeros;
   size_t i = b58_bytes_idx;
   for (; i < result_buf_size; i++) {
-    result_buf[i - unused] = alphabet[result_buf[i]];
+    result_buf[i - unused] = (uint8_t)alphabet[result_buf[i]];
   }
   *result_size = i - unused;
   return MB_ERR_OK;
@@ -477,7 +612,8 @@ size_t mb_base58btc_decode_size(const uint8_t* const input, size_t input_size) {
   return ((input_size - zeros) * 733 / 1000 + 1) + zeros;
 }
 
-mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size, size_t* const result_size) {
+mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
+                           size_t* const result_size) {
   static const char lookup[] = {
       -1, -1, -1, -1, -1, -1, -1, -1,  // 0-7
       -1, -1, -1, -1, -1, -1, -1, -1,  // 8-15
@@ -507,16 +643,18 @@ mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_size, uint8_
   }
 
   size_t high = result_buf_size;
-  int carry = 0;
+  uint16_t carry = 0;
   size_t j = 0;
   for (size_t i = num_zeros; i < input_size; i++, high = j) {
-    carry = lookup[input[i]];  // NOLINT
-    if (carry == -1) {
+    char ch = lookup[input[i]];  // NOLINT
+    if (ch < 0) {
       return MB_ERR_INVALID_INPUT;
     }
-    for (j = result_buf_size - 1; (j > high) || carry; j--) {
-      carry += 58 * result_buf[j];
-      result_buf[j] = carry % 256;
+    carry = (uint8_t)ch;
+    for (j = result_buf_size - 1; (j >= high) || carry; j--) {
+      // in this loop, max val of carry is 256 * 58 = 14848
+      carry += (uint16_t)(58 * result_buf[j]);
+      result_buf[j] = (uint8_t)carry % 256;
       carry /= 256;
       if (!j) {
         break;
@@ -546,7 +684,7 @@ mb_err mb_base58btc_decode(const uint8_t* const input, size_t input_size, uint8_
 }
 
 // these correlate to the mb_enc enum
-const mb_encoding codes[NUM_ENCODINGS] = {
+static const mb_encoding codes[NUM_ENCODINGS] = {
     {
         .code = '\0',
         .name = "identity",
@@ -564,6 +702,15 @@ const mb_encoding codes[NUM_ENCODINGS] = {
         .encode = &mb_base2_encode,
         .decode_size = &mb_base2_decode_size,
         .decode = &mb_base2_decode,
+    },
+    {
+        .code = '9',
+        .name = "base10",
+        .enc = MB_ENC_BASE10,
+        .encode_size = &mb_base10_encode_size,
+        .encode = &mb_base10_encode,
+        .decode_size = &mb_base10_decode_size,
+        .decode = &mb_base10_decode,
     },
     {
         .code = 'f',
@@ -657,6 +804,28 @@ mb_err mb_encode(const uint8_t* const input, size_t input_size, mb_enc encoding,
   return err;
 }
 
+mb_err mb_encode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
+                    size_t* result_size) {
+  for (size_t i = 0; i < NUM_ENCODINGS; i++) {
+    if (codes[i].enc == encoding) {
+      return codes[i].encode(input, input_size, result_buf, result_buf_size, result_size);
+    }
+  }
+  return MB_ERR_UNKNOWN_ENC;
+}
+
+size_t mb_encode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding) {
+  if (input_size == 0) {
+    return 0;
+  }
+  for (size_t i = 0; i < NUM_ENCODINGS; i++) {
+    if (codes[i].enc == encoding) {
+      return codes[i].encode_size(input, input_size);
+    }
+  }
+  return MB_ERR_UNKNOWN_ENC;
+}
+
 size_t mb_decode_size(const uint8_t* const input, size_t input_size) {
   if (input_size == 1) {
     return 0;
@@ -670,7 +839,7 @@ size_t mb_decode_size(const uint8_t* const input, size_t input_size) {
   return MB_ERR_UNKNOWN_ENC;
 }
 
-mb_err mb_decode_as_size(const uint8_t* const input, size_t input_size, mb_enc encoding) {
+size_t mb_decode_as_size(const uint8_t* const input, size_t input_size, mb_enc encoding) {
   if (input_size == 0) {
     return 0;
   }
@@ -682,7 +851,8 @@ mb_err mb_decode_as_size(const uint8_t* const input, size_t input_size, mb_enc e
   return MB_ERR_UNKNOWN_ENC;
 }
 
-mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size, size_t* result_size) {
+mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
+                    size_t* result_size) {
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (codes[i].enc == encoding) {
       if (input_size == 0) {
@@ -703,7 +873,7 @@ mb_err mb_decode(const uint8_t* const input, size_t size, mb_enc* const encoding
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (codes[i].code == prefix) {
       if (encoding != NULL) {
-        *encoding = i;
+        *encoding = (mb_enc)i;
       }
       if (size == 1) {
         return MB_ERR_OK;
@@ -717,11 +887,11 @@ mb_err mb_decode(const uint8_t* const input, size_t size, mb_enc* const encoding
 mb_err mb_enc_by_name(const char* const name, mb_enc* const enc) {
   for (size_t i = 0; i < NUM_ENCODINGS; i++) {
     if (strcmp(codes[i].name, name) == 0) {
-      *enc = i;
+      *enc = (mb_enc)i;
       return MB_ERR_OK;
     }
     if (strlen(name) == 1 && (unsigned char)name[0] == codes[i].code) {
-      *enc = i;
+      *enc = (mb_enc)i;
       return MB_ERR_OK;
     }
   }

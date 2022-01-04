@@ -23,14 +23,14 @@ static mh_err murmur3_x64_64(const uint8_t* const input, size_t input_size, uint
 
   // be careful to keep this agnostic to arch endianness
   uint64_t first64 = buf[0];
-  digest[0] = (first64 >> 56) & 0xFF;
-  digest[1] = (first64 >> 48) & 0xFF;
-  digest[2] = (first64 >> 40) & 0xFF;
-  digest[3] = (first64 >> 32) & 0xFF;
-  digest[4] = (first64 >> 24) & 0xFF;
-  digest[5] = (first64 >> 16) & 0xFF;
-  digest[6] = (first64 >> 8) & 0xFF;
-  digest[7] = first64 & 0xFF;
+  digest[0] = (uint8_t)((first64 >> 56) & 0xFF);
+  digest[1] = (uint8_t)((first64 >> 48) & 0xFF);
+  digest[2] = (uint8_t)((first64 >> 40) & 0xFF);
+  digest[3] = (uint8_t)((first64 >> 32) & 0xFF);
+  digest[4] = (uint8_t)((first64 >> 24) & 0xFF);
+  digest[5] = (uint8_t)((first64 >> 16) & 0xFF);
+  digest[6] = (uint8_t)((first64 >> 8) & 0xFF);
+  digest[7] = (uint8_t)(first64 & 0xFF);
 
   free(buf);
   return MH_ERR_OK;
@@ -193,7 +193,8 @@ mh_err mh_encode(const uint8_t* input, size_t input_size, mh_fn_code fn_code, ui
   }
 
   // digest
-  err = mh_digest(input, input_size, fn_code, bytes + fn_varint_size + digest_varint_size, bytes_size - fn_varint_size - digest_varint_size);
+  err =
+      mh_digest(input, input_size, fn_code, bytes + fn_varint_size + digest_varint_size, bytes_size - fn_varint_size - digest_varint_size);
   if (err) {
     return err;
   }

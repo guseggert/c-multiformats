@@ -15,6 +15,7 @@ Current feature list:
   * [x] dynamically register custom encodings
   * [x] identity
   * [x] base2
+  * [x] base10
   * [x] base16
   * [x] base16upper
   * [x] base32
@@ -70,7 +71,10 @@ Current feature list:
 * [x] [cidv1](https://github.com/multiformats/cid#cidv1)
 * [-] [multiaddr](https://github.com/multiformats/multiaddr)
   * [x] dynamically register custom protocols
-  * [ ] protocols
+  * Protocols
+	* [x] IPv4
+	* [ ] IPv6
+	* [x] TCP
   
 This is also run through extensive static and dynamic analysis, including:
 

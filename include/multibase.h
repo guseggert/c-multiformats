@@ -18,10 +18,11 @@ static const char* const MB_ERR_STRS[] = {
     "multibase buffer size too small",
 };
 
-#define NUM_ENCODINGS 9
+#define NUM_ENCODINGS 10
 typedef enum {
   MB_ENC_IDENTITY = 0,
   MB_ENC_BASE2,
+  MB_ENC_BASE10,
   MB_ENC_BASE16,
   MB_ENC_BASE16UPPER,
   MB_ENC_BASE32,
@@ -41,7 +42,8 @@ typedef enum {
  * @result_size is not necessarily the same as @result_buf_size, because in certain base encodings we
  * can't precisely know the result size a priori.
  */
-mb_err mb_encode(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size, size_t* result_size);
+mb_err mb_encode(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
+                 size_t* result_size);
 
 /**
  * Returns the recommended buffer size for encoding @input, so that the caller can allocate memory for encoding.
@@ -52,11 +54,22 @@ mb_err mb_encode(const uint8_t* input, size_t input_size, mb_enc encoding, uint8
 size_t mb_encode_size(const uint8_t* input, size_t input_size, mb_enc encoding);
 
 /**
+ * Directly encodes @input_size bytes of @input into @result_buf without a multibase prefix, encoded as @encoding.
+ *
+ * @result_buf must be cleared before calling this.
+ */
+mb_err mb_encode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
+                    size_t* result_size);
+
+size_t mb_encode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding);
+
+/**
  * Decodes @input_size bytes of @input, stored in @result_buf. See mb_encode().
  *
  * @result_buf must be cleared before calling this.
  */
-mb_err mb_decode(const uint8_t* input, size_t input_size, mb_enc* encoding, uint8_t* result_buf, size_t result_buf_size, size_t* result_size);
+mb_err mb_decode(const uint8_t* input, size_t input_size, mb_enc* encoding, uint8_t* result_buf, size_t result_buf_size,
+                 size_t* result_size);
 
 /**
  * Returns the recommended buffer size for decoding @input, so that the caller can allocate memory for decoding.
@@ -70,9 +83,10 @@ size_t mb_decode_size(const uint8_t* input, size_t input_size);
  *
  * @result_buf must be cleared before calling this.
  */
-mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size, size_t* result_size);
+mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
+                    size_t* result_size);
 
-mb_err mb_decode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding);
+size_t mb_decode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding);
 
 /**
  * Sets @enc to the encoding matching @name.

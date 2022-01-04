@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "cid.h"
 #include "multiaddr.h"
@@ -67,9 +68,9 @@ int cid_inspect(int argc, char* argv[]) {
 
   const uint8_t* digest = NULL;
   size_t digest_size = 0;
-  mh_err mh_err = mh_read_digest(multihash, multihash_size, &digest_size, &digest);
-  if (mh_err) {
-    printf("error reading digest: %s\n", MH_ERR_STRS[mh_err]);
+  mh_err mherr = mh_read_digest(multihash, multihash_size, &digest_size, &digest);
+  if (mherr) {
+    printf("error reading digest: %s\n", MH_ERR_STRS[mherr]);
     exit_code = 1;
     goto free_buf;
   }
@@ -84,17 +85,17 @@ int cid_inspect(int argc, char* argv[]) {
   digest_enc_buf[digest_enc_buf_size] = '\0';
 
   size_t digest_enc_buf_bytes = 0;
-  mb_err mb_err = mb_encode(digest, digest_size, MB_ENC_BASE16UPPER, digest_enc_buf, digest_enc_buf_size, &digest_enc_buf_bytes);
-  if (mb_err) {
-    printf("error encoding digest: %s\n", MB_ERR_STRS[mb_err]);
+  mb_err mberr = mb_encode(digest, digest_size, MB_ENC_BASE16UPPER, digest_enc_buf, digest_enc_buf_size, &digest_enc_buf_bytes);
+  if (mberr) {
+    printf("error encoding digest: %s\n", MB_ERR_STRS[mberr]);
     exit_code = 1;
     goto free_digest_buf;
   }
 
   mh_fn_code fn_code = 0;
-  mh_err = mh_read_fn_code(multihash, multihash_size, &fn_code);
-  if (mh_err) {
-    printf("error reading multihash function: %s\n", MH_ERR_STRS[mh_err]);
+  mherr = mh_read_fn_code(multihash, multihash_size, &fn_code);
+  if (mherr) {
+    printf("error reading multihash function: %s\n", MH_ERR_STRS[mherr]);
     exit_code = 1;
     goto free_digest_buf;
   }
@@ -117,91 +118,163 @@ int multiaddr(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
-  ma_str_comp comps[] = {
-      {.proto_code = MA_PROTO_CODE_UNIX, .value = "/bar/WHATISTHIS"},
-      {.proto_code = MA_PROTO_CODE_UNIX, .value = "/foo/bar"},
-      {.proto_code = MA_PROTO_CODE_TCP, .value = "tcp-val"},
-  };
-  size_t comps_size = sizeof(comps) / sizeof(ma_str_comp);
-  char str[1000] = {0};
-  ma_err err = ma_str_encode(comps, comps_size, str, NULL);
-  if (err) {
-    printf("error: %s\n", MA_ERR_STRS[err]);
+  if (argc != 3) {
+    printf("usage: %s multiaddr <multiaddr>\n", argv[0]);
     return 1;
   }
 
-  /* char* str = calloc(comps_size, sizeof(char)); */
-  /* err = ma_comps_str(comps, comps_size, str, NULL); */
-  /* if (err) { */
-  /*   printf("error: %s\n", MA_ERR_STRS[err]); */
-  /*   free(str); */
-  /*   return 1; */
-  /* } */
+  char* multiaddr = argv[2];
+  size_t multiaddr_len = strlen(multiaddr);
 
-  printf("%s\n", str);
+  ma_str_decoder decoder = {.multiaddr = multiaddr, .multiaddr_len = multiaddr_len};
+  ma_str_comp cur_comp = {0};
+  const ma_proto* cur_proto = NULL;
+  while (!decoder.done) {
+    ma_err err = ma_str_decode_next(&decoder, &cur_comp);
+    if (err) {
+      printf("error decoding multiaddr: %s\n", MA_ERR_STRS[err]);
+      return 1;
+    }
+    err = ma_proto_by_code(cur_comp.proto_code, &cur_proto);
+    if (err) {
+      printf("looking up code %lu: %s\n", cur_comp.proto_code, MA_ERR_STRS[err]);
+      return 1;
+    }
+
+    size_t bytes_size = 0;
+    err = cur_proto->str_to_bytes(cur_proto, cur_comp.value, cur_comp.value_len, NULL, &bytes_size);
+    if (err) {
+      printf("computing bytes size: %s\n", MA_ERR_STRS[err]);
+      return 1;
+    }
+
+    uint8_t* bytes = calloc(bytes_size, sizeof(uint8_t));
+    err = cur_proto->str_to_bytes(cur_proto, cur_comp.value, cur_comp.value_len, bytes, NULL);
+    if (err) {
+      printf("converting string to bytes: %s\n", MA_ERR_STRS[err]);
+      return 1;
+    }
+
+    size_t str_len = 0;
+    err = cur_proto->bytes_to_str(cur_proto, bytes, bytes_size, NULL, &str_len);
+    if (err) {
+      printf("computing string length: %s\n", MA_ERR_STRS[err]);
+      return 1;
+    }
+
+    char* str = calloc(str_len + 1, sizeof(char));
+    err = cur_proto->bytes_to_str(cur_proto, bytes, bytes_size, str, NULL);
+    if (err) {
+      printf("converting bytes back to string: %s\n", MA_ERR_STRS[err]);
+      return 1;
+    }
+
+    printf("protocol=%s, value=", cur_proto->name);
+    for (size_t i = 0; i < cur_comp.value_len; i++) {
+      printf("%c", cur_comp.value[i]);
+    }
+    printf(", bytes=");
+    for (size_t i = 0; i < bytes_size; i++) {
+      printf("%02hx ", bytes[i]);
+    }
+    printf(", str_len=%lu, str=", str_len);
+    for (size_t i = 0; i < str_len; i++) {
+      //      printf("%02hx ", str[i]);
+      printf("%c", str[i]);
+    }
+    printf("\n");
+    free(bytes);
+  }
 
   return 0;
 }
 
 int multibase(int argc, char* argv[]) {
+  uint8_t* input_buf = NULL;
+  uint8_t* dec_buf = NULL;
+  uint8_t* enc_buf = NULL;
+
   int exit_code = EXIT_SUCCESS;
 
-  if (argc != 4) {
-    exit_code = 1;
-    printf("Usage: %s multibase [new_encoding] [encoded_data]\n", argv[0]);
-    goto exit;
+  if (argc < 4) {
+    printf("Usage: %s multibase <new_encoding> <encoded_data> [--raw-input]\n", argv[0]);
+    return 1;
   }
 
   char* enc_str = argv[2];
   char* input = argv[3];
 
+  bool raw_input = false;
+
+  if (argc == 5) {
+    if (strcmp(argv[4], "--raw-input") == 0) {
+      raw_input = true;
+    } else {
+      printf("Usage: %s multibase <new_encoding> <encoded_data> [--raw-input]\n", argv[0]);
+      return 1;
+    }
+  }
+
   mb_enc enc = 0;
   mb_err err = mb_enc_by_name(enc_str, &enc);
   if (err) {
     printf("getting encoding '%s': %s\n", enc_str, MB_ERR_STRS[err]);
+    return 1;
+  }
+
+  size_t input_buf_len = strlen(input);
+  if (raw_input) {
+    input_buf = calloc(input_buf_len, sizeof(uint8_t));
+    memcpy(input_buf, input, input_buf_len);  // NOLINT
+  } else {
+    // decode the input
+    size_t str_len = strlen(input);
+    size_t dec_size = mb_decode_size((uint8_t*)input, str_len);
+    if (dec_size == 0) {
+      printf("\n");
+      goto exit;
+    }
+    dec_buf = calloc(dec_size, sizeof(uint8_t));
+    mb_enc dec_enc = 0;
+    size_t dec_bytes = 0;
+    mb_err dec_err = mb_decode((uint8_t*)input, str_len, &dec_enc, dec_buf, dec_size, &dec_bytes);
+    if (dec_err) {
+      printf("decoding: %s\n", MB_ERR_STRS[dec_err]);
+      exit_code = 1;
+      goto exit;
+    }
+    input_buf_len = dec_bytes;
+    input_buf = calloc(input_buf_len, sizeof(uint8_t));
+    memcpy(input_buf, dec_buf, input_buf_len);
+  }
+
+  // encode the result
+  size_t enc_size = mb_encode_size(input_buf, input_buf_len, enc);
+  enc_buf = calloc(enc_size, sizeof(uint8_t));
+  size_t enc_bytes = 0;
+  mb_err enc_err = mb_encode(input_buf, input_buf_len, enc, enc_buf, enc_size, &enc_bytes);
+  if (enc_err) {
+    printf("encoding: %s\n", MB_ERR_STRS[enc_err]);
     exit_code = 1;
     goto exit;
   }
 
-  // decode the input
-  size_t str_len = strlen(input);
-  size_t dec_size = mb_decode_size((uint8_t*)input, str_len);
-  if (dec_size == 0) {
-    printf("\n");
-    return 0;
-  }
-  uint8_t* dec_buf = calloc(dec_size, sizeof(uint8_t));
-  mb_enc dec_enc = 0;
-  size_t dec_bytes = 0;
-  mb_err dec_err = mb_decode((uint8_t*)input, str_len, &dec_enc, dec_buf, dec_size, &dec_bytes);
-  if (dec_err) {
-    printf("decoding: %s\n", MB_ERR_STRS[dec_err]);
-    exit_code = 1;
-    goto free_dec_buf;
-  }
-
-  // re-encode
-  size_t enc_size = mb_encode_size(dec_buf, dec_size, enc);
-  uint8_t* enc_buf = calloc(enc_size, sizeof(uint8_t));
-  size_t enc_bytes = 0;
-  mb_err enc_err = mb_encode(dec_buf, dec_size, enc, enc_buf, enc_size, &enc_bytes);
-  if (enc_err) {
-    printf("encoding: %s\n", MB_ERR_STRS[enc_err]);
-    exit_code = 1;
-    goto free_enc_buf;
-  }
-
   // print
-  for (size_t i = 0; i < enc_size; i++) {
+  for (size_t i = 0; i < enc_bytes; i++) {
     printf("%c", enc_buf[i]);
   }
   printf("\n");
 
-free_enc_buf:
-  free(enc_buf);
-free_dec_buf:
-  free(dec_buf);
 exit:
+  if (enc_buf) {
+    free(enc_buf);
+  }
+  if (dec_buf) {
+    free(dec_buf);
+  }
+  if (input_buf) {
+    free(input_buf);
+  }
   return exit_code;
 }
 
@@ -247,9 +320,9 @@ int multihash(int argc, char* argv[]) {
   mh_enc[mh_enc_size] = '\0';
 
   size_t mh_enc_bytes = 0;
-  mb_err mb_err = mb_encode(mh, mh_size, MB_ENC_BASE16, mh_enc, mh_enc_size, &mh_enc_bytes);
-  if (mb_err) {
-    printf("error encoding multihash: %s\n", MB_ERR_STRS[mb_err]);
+  mb_err mberr = mb_encode(mh, mh_size, MB_ENC_BASE16, mh_enc, mh_enc_size, &mh_enc_bytes);
+  if (mberr) {
+    printf("error encoding multihash: %s\n", MB_ERR_STRS[mberr]);
     free(mh);
     free(mh_enc);
     return 1;
