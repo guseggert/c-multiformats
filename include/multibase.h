@@ -11,6 +11,7 @@ typedef enum {
   MB_ERR_BUF_SIZE,
 } mb_err;
 
+// TODO(guseggert): hide this stuff behind a function to get the error msg (makes it easier for language bindings)
 static const char* const MB_ERR_STRS[] = {
     "no error",
     "unknown multibase encoding",

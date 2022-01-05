@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "multiaddr.h"
-
 typedef struct {
   char* name;
   mb_err (*encode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,
