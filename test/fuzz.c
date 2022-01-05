@@ -20,6 +20,10 @@ void print_buf(char* name, const uint8_t* buf, size_t buf_size) {
 }
 
 int fuzz_multibase(const uint8_t* data, size_t size) {
+  // fuzzing strategies:
+  // - pick a random encoding, encode input data, decode, verify result is identical to input
+  // - TODO(guseggert): decode random input data (checks cases missed by above such as invalid encoding)
+
   // require at least two bytes
   if (size < 2) {
     return 0;

@@ -2,7 +2,6 @@ import ctypes
 from ctypes import byref, POINTER, c_uint8, c_size_t, c_uint, c_char_p
 import sys
 
-# example showing how to base-encode a string with ctypes
 # run with: python bindings/python.py base2 'yes mani !'
 # another example: python bindings/python.py base64 '+++' | base64 -d ; echo
 

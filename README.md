@@ -114,5 +114,13 @@ You can select the crypto backend for multihash with the following settings when
 
 If no backend is specified, then only the built-in hash functions will be available. You can also use custom crypto backends by registering hash functions at runtime with `mh_add_funcs()`.
 
+## Language Bindings
+There are example language bindings in the `bindings` directory:
+
+* Python (ctypes)
+* Java/JVM (Groovy using JNA)
+* Ruby (libffi)
+
+
 ## Contributing
-Contributions are greatly appreciated. If something doesn't work for you, please open an issue (and if you can, help fix it!).
+Contributions and feedback are greatly appreciated. If something doesn't work for you, please open an issue (and if you can, help fix it!).
