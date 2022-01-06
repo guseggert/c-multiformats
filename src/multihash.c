@@ -10,14 +10,8 @@
 
 static mh_err murmur3_x64_64(const uint8_t* const input, size_t input_size, uint8_t* const digest, size_t digest_size) {
   (void)digest_size;
-  // This is defined as the first half of x64-128.
-  //
-  // Unfortunately to use this library we must allocate a 16-byte buffer and then copy the first
-  // 8 bytes to the result buffer, which breaks the convention of not allocating.
-  uint64_t* buf = malloc(2 * sizeof(uint64_t));
-  if (buf == NULL) {
-    return MH_ERR_MEMORY;
-  }
+
+  uint64_t buf[2] = {0};
 
   MurmurHash3_x64_128(input, (int)input_size, 0, buf);
 

@@ -2,9 +2,7 @@ This is a C implementation of [multiformats](https://github.com/multiformats/mul
 
 Its goal is to be a portable implementation that can be reused across as many programming languages, operating systems, and architectures as possible. In addition to running tests locally, I also test this on an STM32 MCU.
 
-This has a design goal of avoiding dynamic heap allocations, so APIs are generally usable with only stack allocations, constant-sized buffers, mem pools, etc. There are currently two exceptions to this: 
-* The murmur3-x64-64 hash function, due to limitations of the underlying library
-* The OpenSSL multihash backend, due to limitations in OpenSSL
+This has a design goal of avoiding dynamic heap allocations, so APIs are generally usable with only stack allocations, constant-sized buffers, mem pools, etc. The OpenSSL multihash backend is the only exception to this, because OpenSSL itself allocates.
 
 This is under early development and APIs may break or be incomplete.
 
@@ -69,7 +67,7 @@ Current feature list:
   * [ ] keccak-{224,256,384,512}
 * [x] [cidv0](https://github.com/multiformats/cid#cidv0)
 * [x] [cidv1](https://github.com/multiformats/cid#cidv1)
-* [-] [multiaddr](https://github.com/multiformats/multiaddr)
+* [x] [multiaddr](https://github.com/multiformats/multiaddr)
   * [x] dynamically register custom protocols
   * Protocols
 	* [x] IPv4
