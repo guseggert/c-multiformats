@@ -20,7 +20,7 @@ static void mb_test_encode(char* input, size_t input_size, mb_enc encoding, char
   const char* encoding_name = NULL;
   mb_err enc_name_err = mb_enc_name(encoding, &encoding_name);
   if (enc_name_err) {
-    fail_msg("error finding encoding name: %s", MB_ERR_STRS[enc_name_err]);
+    fail_msg("error finding encoding name: %s", mb_err_str(enc_name_err));
   }
   printf("\tencoding=%s\texpected=%s\n", encoding_name, expected);
 
@@ -41,8 +41,8 @@ static void mb_test_encode(char* input, size_t input_size, mb_enc encoding, char
   }
   printf("\n");
 
-  const char* actual_err_str = MB_ERR_STRS[err];
-  const char* expected_err_str = MB_ERR_STRS[expected_err];
+  const char* actual_err_str = mb_err_str(err);
+  const char* expected_err_str = mb_err_str(expected_err);
   assert_string_equal(expected_err_str, actual_err_str);
 
   if (err) {
@@ -64,8 +64,8 @@ static void mb_test_decode(char* input, size_t input_size, char* expected, size_
   size_t dec_bytes = 0;
   mb_err err = mb_decode(in, input_size, NULL, res_buf, res_size, &dec_bytes);
 
-  const char* actual_err_str = MB_ERR_STRS[err];
-  const char* expected_err_str = MB_ERR_STRS[expected_err];
+  const char* actual_err_str = mb_err_str(err);
+  const char* expected_err_str = mb_err_str(expected_err);
   assert_string_equal(expected_err_str, actual_err_str);
 
   if (err) {
@@ -127,7 +127,6 @@ static void mb_decode_base10_test() {
   mb_test_decode("96553600", 8, "\x64\x00\x00", 3, 0);
   mb_test_decode("99670086", 8, "\x93\x8d\xc6", 3, 0);
 }
-
 
 static void mb_encode_base64_test() {
   mb_test_encode("yes mani !", 10, MB_ENC_BASE64, "meWVzIG1hbmkgIQ", 15, 0);
@@ -265,8 +264,8 @@ static void mb_test_enc_by_name(char* name, mb_enc expected_enc, mb_err expected
   mb_enc actual_enc = 0;
   mb_err actual_err = mb_enc_by_name(name, &actual_enc);
 
-  const char* actual_err_str = MB_ERR_STRS[actual_err];
-  const char* expected_err_str = MB_ERR_STRS[expected_err];
+  const char* actual_err_str = mb_err_str(actual_err);
+  const char* expected_err_str = mb_err_str(expected_err);
   assert_string_equal(expected_err_str, actual_err_str);
 
   if (actual_err) {

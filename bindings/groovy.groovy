@@ -18,14 +18,22 @@ public interface Multibase extends Library {
 	  int mb_encode_as(byte[] input, long inputSize, int encoding, byte[] resultBuf, long resultBufSize, LongByReference resultSize)
 	  long mb_encode_as_size(byte[] input, long inputSize, int encoding)
 	  int mb_enc_by_name(String name, IntByReference enc)
+	  String mb_err_str(long errCode)
 };
 
 mb = Native.loadLibrary("multibase", Multibase.class)
 
+def die_if_err(code) {
+    if (code) {
+       System.err.println(mb.mb_err_str(code))
+       System.exit(1)
+    }
+}
+
 encCodeRef = new IntByReference(0)
 
 res = mb.mb_enc_by_name(enc, encCodeRef)
-assert res == 0
+die_if_err(res)
 
 encCode = encCodeRef.value
 
@@ -38,7 +46,7 @@ resultBuf = new byte[resultBufSize]
 resultSizeRef = new LongByReference(0)
 
 res = mb.mb_encode_as(inputBytes, inputSize, encCode, resultBuf, resultBufSize, resultSizeRef)
-assert res == 0
+die_if_err(res)
 
 resultSize = resultSizeRef.value
 

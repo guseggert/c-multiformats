@@ -43,7 +43,7 @@ int fuzz_multibase(const uint8_t* data, size_t size) {
   size_t enc_bytes = 0;
   mb_err enc_err = mb_encode(data, size, enc, enc_buf, enc_buf_size, &enc_bytes);
   if (enc_err) {
-    printf("error encoding: %s\n", MB_ERR_STRS[enc_err]);
+    printf("error encoding: %s\n", mb_err_str(enc_err));
     print_buf("data", data, size);
     free(enc_buf);
     exit(1);  // NOLINT
@@ -63,7 +63,7 @@ int fuzz_multibase(const uint8_t* data, size_t size) {
   size_t dec_bytes = 0;
   mb_err dec_err = mb_decode(enc_buf, enc_bytes, &dec_enc, dec_buf, dec_buf_size, &dec_bytes);
   if (dec_err) {
-    printf("error decoding: %s\n", MB_ERR_STRS[dec_err]);
+    printf("error decoding: %s\n", mb_err_str(dec_err));
     print_buf("data", data, size);
     print_buf("enc_buf", enc_buf, enc_buf_size);
     free(enc_buf);

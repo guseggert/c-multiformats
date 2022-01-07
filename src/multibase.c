@@ -5,6 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char* mb_err_str(mb_err err) {
+  switch (err) {
+    case MB_ERR_OK:
+      return "no error";
+    case MB_ERR_UNKNOWN_ENC:
+      return "unknown multibase encoding";
+    case MB_ERR_INVALID_INPUT:
+      return "invalid multibase";
+    case MB_ERR_BUF_SIZE:
+      return "multibase buffer size too small";
+    default:
+      return "unknown error";
+  }
+}
+
 typedef struct {
   char* name;
   mb_err (*encode)(const uint8_t* const input, size_t input_size, uint8_t* const result_buf, size_t result_buf_size,

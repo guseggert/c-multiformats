@@ -11,11 +11,7 @@ typedef enum {
   MA_ERR_INVALID_INPUT,
 } ma_err;
 
-static const char* const MA_ERR_STRS[] = {
-    "no error",
-    "unknown protocol",
-    "invalid multiaddr input",
-};
+const char* ma_err_str(ma_err err);
 
 typedef uint64_t ma_proto_code;
 const ma_proto_code MA_PROTO_CODE_IP4 = 0x0004;

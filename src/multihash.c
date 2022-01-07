@@ -8,6 +8,23 @@
 #include "murmur3.h"
 #include "varint.h"
 
+const char* mh_err_str(mh_err err) {
+  switch (err) {
+    case MH_ERR_OK:
+      return "no error";
+    case MH_ERR_UNKNOWN_HASHFN:
+      return "unknown hash function";
+    case MH_ERR_UNSUPPORTED_HASHFN:
+      return "unsupported hash function";
+    case MH_ERR_INVALID_INPUT:
+      return "invalid multihash input";
+    case MH_ERR_MEMORY:
+      return "unable to allocate memory";
+    default:
+      return "unknown multihash error";
+  }
+}
+
 static mh_err murmur3_x64_64(const uint8_t* const input, size_t input_size, uint8_t* const digest, size_t digest_size) {
   (void)digest_size;
 
@@ -26,7 +43,6 @@ static mh_err murmur3_x64_64(const uint8_t* const input, size_t input_size, uint
   digest[6] = (uint8_t)((first64 >> 8) & 0xFF);
   digest[7] = (uint8_t)(first64 & 0xFF);
 
-  free(buf);
   return MH_ERR_OK;
 }
 

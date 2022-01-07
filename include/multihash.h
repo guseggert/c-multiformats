@@ -13,13 +13,7 @@ typedef enum {
   MH_ERR_MEMORY,
 } mh_err;
 
-static const char* const MH_ERR_STRS[] = {
-    "no error",
-    "unknown hash function",
-    "unsupported hash function",
-    "invalid multihash input",
-    "unable to allocate memory",
-};
+const char* mh_err_str(mh_err err);
 
 typedef uint64_t mh_fn_code;
 const mh_fn_code MH_FN_CODE_IDENTITY = 0x00;

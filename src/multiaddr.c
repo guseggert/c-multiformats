@@ -8,6 +8,19 @@
 
 #include "varint.h"
 
+const char* ma_err_str(ma_err err) {
+  switch (err) {
+    case MA_ERR_OK:
+      return "no error";
+    case MA_ERR_UNKNOWN_PROTOCOL:
+      return "unknown protocol";
+    case MA_ERR_INVALID_INPUT:
+      return "invalid multiaddr input";
+    default:
+      return "unknown multiaddr error";
+  }
+}
+
 static bool bytes_eql(const char* a, size_t a_size, const char* b, size_t b_size) {
   if (a_size != b_size) {
     return false;

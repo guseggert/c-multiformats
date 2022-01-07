@@ -11,12 +11,7 @@ typedef enum {
   VARINT_ERR_BUF_SIZE,
 } varint_err;
 
-static const char *const VARINT_ERR_STRS[] = {
-    "no error",
-    "invalid varint",
-    "varint input too big",
-    "varint buffer size too small",
-};
+const char* varint_err_str(varint_err err);
 
 /**
  * The maximum number of bytes to encode a uint64 as a varint.

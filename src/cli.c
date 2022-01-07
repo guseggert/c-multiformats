@@ -23,7 +23,7 @@ int cid_inspect(int argc, char* argv[]) {
   size_t buf_size = 0;
   cid_err err = cid_str_to_bytes_size(cid_str, &buf_size);
   if (err) {
-    printf("%s\n", CID_ERR_STRS[err]);
+    printf("%s\n", cid_err_str(err));
     exit_code = 1;
     goto exit;
   }
@@ -36,7 +36,7 @@ int cid_inspect(int argc, char* argv[]) {
   size_t bytes_size = 0;
   err = cid_str_to_bytes(cid_str, buf, buf_size, &bytes_size);
   if (err) {
-    printf("converting CID to bytes: %s\n", CID_ERR_STRS[err]);
+    printf("converting CID to bytes: %s\n", cid_err_str(err));
     exit_code = 1;
     goto free_buf;
   }
@@ -44,7 +44,7 @@ int cid_inspect(int argc, char* argv[]) {
   uint64_t version = 0;
   err = cid_read_version(buf, bytes_size, &version);
   if (err) {
-    printf("reading version: %s\n", CID_ERR_STRS[err]);
+    printf("reading version: %s\n", cid_err_str(err));
     exit_code = 1;
     goto free_buf;
   }
@@ -52,7 +52,7 @@ int cid_inspect(int argc, char* argv[]) {
   uint64_t content_type = 0;
   err = cid_read_content_type(buf, bytes_size, &content_type);
   if (err) {
-    printf("reading content type: %s\n", CID_ERR_STRS[err]);
+    printf("reading content type: %s\n", cid_err_str(err));
     exit_code = 1;
     goto free_buf;
   }
@@ -61,7 +61,7 @@ int cid_inspect(int argc, char* argv[]) {
   size_t multihash_size = 0;
   err = cid_read_multihash(buf, bytes_size, &multihash, &multihash_size);
   if (err) {
-    printf("reading multihash: %s\n", CID_ERR_STRS[err]);
+    printf("reading multihash: %s\n", cid_err_str(err));
     exit_code = 1;
     goto free_buf;
   }
@@ -70,7 +70,7 @@ int cid_inspect(int argc, char* argv[]) {
   size_t digest_size = 0;
   mh_err mherr = mh_read_digest(multihash, multihash_size, &digest_size, &digest);
   if (mherr) {
-    printf("error reading digest: %s\n", MH_ERR_STRS[mherr]);
+    printf("error reading digest: %s\n", mh_err_str(mherr));
     exit_code = 1;
     goto free_buf;
   }
@@ -87,7 +87,7 @@ int cid_inspect(int argc, char* argv[]) {
   size_t digest_enc_buf_bytes = 0;
   mb_err mberr = mb_encode(digest, digest_size, MB_ENC_BASE16UPPER, digest_enc_buf, digest_enc_buf_size, &digest_enc_buf_bytes);
   if (mberr) {
-    printf("error encoding digest: %s\n", MB_ERR_STRS[mberr]);
+    printf("error encoding digest: %s\n", mb_err_str(mberr));
     exit_code = 1;
     goto free_digest_buf;
   }
@@ -95,7 +95,7 @@ int cid_inspect(int argc, char* argv[]) {
   mh_fn_code fn_code = 0;
   mherr = mh_read_fn_code(multihash, multihash_size, &fn_code);
   if (mherr) {
-    printf("error reading multihash function: %s\n", MH_ERR_STRS[mherr]);
+    printf("error reading multihash function: %s\n", mh_err_str(mherr));
     exit_code = 1;
     goto free_digest_buf;
   }
@@ -132,40 +132,40 @@ int multiaddr(int argc, char** argv) {
   while (!decoder.done) {
     ma_err err = ma_str_decode_next(&decoder, &cur_comp);
     if (err) {
-      printf("error decoding multiaddr: %s\n", MA_ERR_STRS[err]);
+      printf("error decoding multiaddr: %s\n", ma_err_str(err));
       return 1;
     }
     err = ma_proto_by_code(cur_comp.proto_code, &cur_proto);
     if (err) {
-      printf("looking up code %lu: %s\n", cur_comp.proto_code, MA_ERR_STRS[err]);
+      printf("looking up code %lu: %s\n", cur_comp.proto_code, ma_err_str(err));
       return 1;
     }
 
     size_t bytes_size = 0;
     err = cur_proto->str_to_bytes(cur_proto, cur_comp.value, cur_comp.value_len, NULL, &bytes_size);
     if (err) {
-      printf("computing bytes size: %s\n", MA_ERR_STRS[err]);
+      printf("computing bytes size: %s\n", ma_err_str(err));
       return 1;
     }
 
     uint8_t* bytes = calloc(bytes_size, sizeof(uint8_t));
     err = cur_proto->str_to_bytes(cur_proto, cur_comp.value, cur_comp.value_len, bytes, NULL);
     if (err) {
-      printf("converting string to bytes: %s\n", MA_ERR_STRS[err]);
+      printf("converting string to bytes: %s\n", ma_err_str(err));
       return 1;
     }
 
     size_t str_len = 0;
     err = cur_proto->bytes_to_str(cur_proto, bytes, bytes_size, NULL, &str_len);
     if (err) {
-      printf("computing string length: %s\n", MA_ERR_STRS[err]);
+      printf("computing string length: %s\n", ma_err_str(err));
       return 1;
     }
 
     char* str = calloc(str_len + 1, sizeof(char));
     err = cur_proto->bytes_to_str(cur_proto, bytes, bytes_size, str, NULL);
     if (err) {
-      printf("converting bytes back to string: %s\n", MA_ERR_STRS[err]);
+      printf("converting bytes back to string: %s\n", ma_err_str(err));
       return 1;
     }
 
@@ -218,7 +218,7 @@ int multibase(int argc, char* argv[]) {
   mb_enc enc = 0;
   mb_err err = mb_enc_by_name(enc_str, &enc);
   if (err) {
-    printf("getting encoding '%s': %s\n", enc_str, MB_ERR_STRS[err]);
+    printf("getting encoding '%s': %s\n", enc_str, mb_err_str(err));
     return 1;
   }
 
@@ -239,7 +239,7 @@ int multibase(int argc, char* argv[]) {
     size_t dec_bytes = 0;
     mb_err dec_err = mb_decode((uint8_t*)input, str_len, &dec_enc, dec_buf, dec_size, &dec_bytes);
     if (dec_err) {
-      printf("decoding: %s\n", MB_ERR_STRS[dec_err]);
+      printf("decoding: %s\n", mb_err_str(dec_err));
       exit_code = 1;
       goto exit;
     }
@@ -254,7 +254,7 @@ int multibase(int argc, char* argv[]) {
   size_t enc_bytes = 0;
   mb_err enc_err = mb_encode(input_buf, input_buf_len, enc, enc_buf, enc_size, &enc_bytes);
   if (enc_err) {
-    printf("encoding: %s\n", MB_ERR_STRS[enc_err]);
+    printf("encoding: %s\n", mb_err_str(enc_err));
     exit_code = 1;
     goto exit;
   }
@@ -296,7 +296,7 @@ int multihash(int argc, char* argv[]) {
   size_t mh_size = 0;
   mh_err err = mh_encode_size(f->code, input_str_len, &mh_size);
   if (err) {
-    printf("error computing multihash length: %s\n", MH_ERR_STRS[err]);
+    printf("error computing multihash length: %s\n", mh_err_str(err));
     return 1;
   }
   uint8_t* mh = malloc(mh_size * sizeof(uint8_t));
@@ -306,7 +306,7 @@ int multihash(int argc, char* argv[]) {
   }
   err = mh_encode((uint8_t*)input_str, input_str_len, f->code, mh, mh_size);
   if (err) {
-    printf("error computing multihash: %s\n", MH_ERR_STRS[err]);
+    printf("error computing multihash: %s\n", mh_err_str(err));
     free(mh);
     return 1;
   }
@@ -322,7 +322,7 @@ int multihash(int argc, char* argv[]) {
   size_t mh_enc_bytes = 0;
   mb_err mberr = mb_encode(mh, mh_size, MB_ENC_BASE16, mh_enc, mh_enc_size, &mh_enc_bytes);
   if (mberr) {
-    printf("error encoding multihash: %s\n", MB_ERR_STRS[mberr]);
+    printf("error encoding multihash: %s\n", mb_err_str(mberr));
     free(mh);
     free(mh_enc);
     return 1;
@@ -360,7 +360,7 @@ int varint(int argc, char* argv[]) {
     size_t varint_size = 0;
     varint_err err = uint64_to_varint((uint64_t)num, varint, &varint_size);
     if (err) {
-      printf("error: %s\n", VARINT_ERR_STRS[err]);
+      printf("error: %s\n", varint_err_str(err));
       return 1;
     }
 
@@ -368,7 +368,7 @@ int varint(int argc, char* argv[]) {
     mb_err mberr = mb_enc_by_name(encoding, &enc);
     if (mberr) {
       free(varint);
-      printf("encoding '%s': %s\n", encoding, MB_ERR_STRS[mberr]);
+      printf("encoding '%s': %s\n", encoding, mb_err_str(mberr));
       return 1;
     }
 
@@ -379,7 +379,7 @@ int varint(int argc, char* argv[]) {
     if (mberr) {
       free(varint);
       free(enc_bytes);
-      printf("%s\n", MB_ERR_STRS[mberr]);
+      printf("%s\n", mb_err_str(mberr));
       return 1;
     }
     for (size_t i = 0; i < result_size; i++) {
@@ -400,14 +400,14 @@ int varint(int argc, char* argv[]) {
     mb_err err = mb_decode(enc, enc_str_len, NULL, dec_bytes, dec_size, &dec_result_size);
     if (err) {
       free(dec_bytes);
-      printf("%s\n", MB_ERR_STRS[err]);
+      printf("%s\n", mb_err_str(err));
       return 1;
     }
     uint64_t n = 0;
     varint_err verr = varint_to_uint64(dec_bytes, dec_result_size, &n, NULL);
     if (verr) {
       free(dec_bytes);
-      printf("%s\n", VARINT_ERR_STRS[verr]);
+      printf("%s\n", varint_err_str(verr));
       return 1;
     }
     printf("%lu\n", n);

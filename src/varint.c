@@ -7,6 +7,21 @@
 
 #include "multibase.h"
 
+const char *varint_err_str(varint_err err) {
+  switch (err) {
+    case VARINT_ERR_OK:
+      return "no error";
+    case VARINT_ERR_INVALID_INPUT:
+      return "invalid varint";
+    case VARINT_ERR_INPUT_TOO_BIG:
+      return "varint input too big";
+    case VARINT_ERR_BUF_SIZE:
+      return "varint buffer size too small";
+    default:
+      return "unknown varint error";
+  }
+}
+
 // 0x80 = 1000 0000
 // 0x7f = 0111 1111
 varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_size, uint64_t *const val, size_t *const varint_size) {

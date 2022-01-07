@@ -18,12 +18,7 @@ typedef enum {
   CID_ERR_MEMORY,
 } cid_err;
 
-static const char* const CID_ERR_STRS[] = {
-    "no error",
-    "invalid CID",
-    "unsupported CID version",
-    "unable to allocate memory",
-};
+const char* cid_err_str(cid_err err);
 
 /**
  * Reads the CID @version from @cid bytes of size @cid_size.

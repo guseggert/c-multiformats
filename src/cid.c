@@ -9,6 +9,21 @@
 #include "multihash.h"
 #include "varint.h"
 
+const char* cid_err_str(cid_err err) {
+  switch (err) {
+    case CID_ERR_OK:
+      return "no error";
+    case CID_ERR_INVALID_INPUT:
+      return "invalid CID";
+    case CID_ERR_UNSUPPORTED_VERSION:
+      return "unsupported CID version";
+    case CID_ERR_MEMORY:
+      return "unable to allocate memory";
+    default:
+      return "unknown error";
+  }
+}
+
 static cid_err cid_read_version_varint(const uint8_t* const bytes, size_t bytes_size, uint64_t* const version_varint, size_t* bytes_read) {
   if (bytes_size == 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
     // cidv0
