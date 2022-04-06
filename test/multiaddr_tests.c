@@ -241,7 +241,7 @@ static void ma_verify_protocols_tests() {
   size_t varint_size = 0;
 
   const ma_proto* cur = protos;
-  while (cur != NULL) {
+  while (cur) {
     printf("verifying protocol %s\n", cur->name);
 
     // verify that the protocol code varints are correct

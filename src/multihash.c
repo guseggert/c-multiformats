@@ -120,14 +120,15 @@ const mh_func mh_fn_identity = {
     .hash_fn_size = identity_size,
     .next = &mh_fn_sha2_256_trunc254_padded,
 };
-static const mh_func* mh_funcs = &mh_fn_identity;  // NOLINT
 
-void mh_add_funcs(mh_func* funcs) {
-  if (funcs == NULL) {
+const mh_func* mh_funcs = &mh_fn_identity;  // NOLINT
+
+void mh_funcs_add(mh_func* funcs) {
+  if (!funcs) {
     return;
   }
   mh_func* cur_func = funcs;
-  while (cur_func->next != NULL) {
+  while (cur_func->next) {
     cur_func = (mh_func*)cur_func->next;
   }
   cur_func->next = mh_funcs;
@@ -135,8 +136,8 @@ void mh_add_funcs(mh_func* funcs) {
 }
 
 mh_err mh_digest(const uint8_t* const input, size_t input_size, mh_fn_code fn_code, uint8_t* const digest, size_t digest_size) {
-  const mh_func* cur_func = &mh_fn_identity;
-  while (cur_func != NULL) {
+  const mh_func* cur_func = mh_funcs;
+  while (cur_func) {
     if (cur_func->code == fn_code) {
       return cur_func->hash_fn(input, input_size, digest, digest_size);
     }
@@ -146,10 +147,12 @@ mh_err mh_digest(const uint8_t* const input, size_t input_size, mh_fn_code fn_co
 }
 
 mh_err mh_digest_size(mh_fn_code fn_code, size_t input_size, size_t* const digest_size) {
-  const mh_func* cur_func = &mh_fn_identity;
-  while (cur_func != NULL) {
+  const mh_func* cur_func = mh_funcs;
+  while (cur_func) {
     if (cur_func->code == fn_code) {
-      return cur_func->hash_fn_size(input_size, digest_size);
+      if (digest_size) {
+        return cur_func->hash_fn_size(input_size, digest_size);
+      }
     }
     cur_func = cur_func->next;
   }
@@ -158,20 +161,20 @@ mh_err mh_digest_size(mh_fn_code fn_code, size_t input_size, size_t* const diges
 
 mh_err mh_encode_size(mh_fn_code fn_code, size_t input_size, size_t* encode_size) {
   // <fncode><digestsize><digest>
-  // sizegth of fn varint
+  // size of fn varint
   size_t fn_varint_size = 0;
   varint_err vi_err = uint64_to_varint(fn_code, NULL, &fn_varint_size);
   if (vi_err) {
     return MH_ERR_INVALID_INPUT;
   }
-  // sizegth of digest
+  // size of digest
   size_t digest_size = 0;
   mh_err err = mh_digest_size(fn_code, input_size, &digest_size);
   if (err) {
     return err;
   }
 
-  // sizegth of digest varint
+  // size of digest varint
   size_t digest_varint_size = 0;
   vi_err = uint64_to_varint(digest_size, NULL, &digest_varint_size);
   if (vi_err) {
@@ -179,6 +182,7 @@ mh_err mh_encode_size(mh_fn_code fn_code, size_t input_size, size_t* encode_size
   }
 
   *encode_size = fn_varint_size + digest_varint_size + digest_size;
+
   return MH_ERR_OK;
 }
 
@@ -218,7 +222,7 @@ mh_err mh_read_fn_code(const uint8_t* bytes, size_t bytes_size, mh_fn_code* fn_c
   if (err) {
     return MH_ERR_INVALID_INPUT;
   }
-  if (fn_code != NULL) {
+  if (fn_code) {
     *fn_code = mh_varint;
   }
   return MH_ERR_OK;
@@ -242,10 +246,10 @@ mh_err mh_read_digest(const uint8_t* bytes, size_t bytes_size, size_t* digest_si
     return MH_ERR_INVALID_INPUT;
   }
 
-  if (digest_size != NULL) {
+  if (digest_size) {
     *digest_size = digest_varint;
   }
-  if (digest != NULL) {
+  if (digest) {
     *digest = bytes + mh_varint_size + digest_varint_size;
   }
 
@@ -267,7 +271,7 @@ bool mh_validate(const uint8_t* bytes, size_t bytes_size) {
 
 mh_err mh_func_by_name(const char* const name, const mh_func** func) {
   const mh_func* cur_func = &mh_fn_identity;
-  while (cur_func != NULL) {
+  while (cur_func) {
     if (cur_func->disabled) {
       cur_func = cur_func->next;
       continue;
@@ -283,7 +287,7 @@ mh_err mh_func_by_name(const char* const name, const mh_func** func) {
 
 mh_err mh_func_by_code(mh_fn_code fn_code, const mh_func** func) {
   const mh_func* cur_func = &mh_fn_identity;
-  while (cur_func != NULL) {
+  while (cur_func) {
     if (cur_func->disabled) {
       cur_func = cur_func->next;
       continue;

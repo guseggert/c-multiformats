@@ -57,7 +57,7 @@ static ma_err uint32_str_to_bytes(const char* const str, const size_t str_len, u
   if (n > UINT32_MAX) {
     return MA_ERR_INVALID_INPUT;
   }
-  if (num != NULL) {
+  if (num) {
     *num = (uint32_t)n;
   }
 
@@ -70,12 +70,12 @@ static ma_err uint32_str_to_bytes(const char* const str, const size_t str_len, u
       // find first non-zero byte
       continue;
     }
-    if (bytes != NULL) {
+    if (bytes) {
       bytes[bytes_idx] = b & 0xff;
     }
     bytes_idx++;
   }
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = bytes_idx;
   }
   return MA_ERR_OK;
@@ -93,16 +93,16 @@ static ma_err uint32_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char*
     place *= 256;
   }
 
-  if (num != NULL) {
+  if (num) {
     *num = n;
   }
 
   // special case: "0"
   if (n == 0) {
-    if (str_len != NULL) {
+    if (str_len) {
       *str_len = 1;
     }
-    if (str != NULL) {
+    if (str) {
       str[0] = '0';
     }
     return MA_ERR_OK;
@@ -116,12 +116,12 @@ static ma_err uint32_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char*
 
   uint32_t cur_n = n;
   for (size_t cur_digit = 0; cur_digit < num_digits; cur_digit++, cur_place /= 10) {
-    if (str != NULL) {
+    if (str) {
       str[cur_digit] = (char)((cur_n / (cur_place / 10)) + 48);
       cur_n %= (cur_place / 10);
     }
   }
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = num_digits;
   }
   return MA_ERR_OK;
@@ -163,10 +163,10 @@ static ma_err port_validate_bytes(const struct proto* p, const uint8_t* bytes, s
 
 static ma_err identity_bytes_to_str(const struct proto* p, const uint8_t* const bytes, size_t bytes_size, char* str, size_t* str_len) {
   (void)p;
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = bytes_size;
   }
-  if (str != NULL) {
+  if (str) {
     memcpy(str, bytes, bytes_size);
   }
   return MA_ERR_OK;
@@ -175,10 +175,10 @@ static ma_err identity_bytes_to_str(const struct proto* p, const uint8_t* const 
 static ma_err identity_str_to_bytes(const struct proto* p, const char* const str, const size_t str_len, uint8_t* bytes,
                                     size_t* bytes_size) {
   (void)p;
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = str_len;
   }
-  if (bytes != NULL) {
+  if (bytes) {
     memcpy(bytes, str, str_len);
   }
   return MA_ERR_OK;
@@ -200,7 +200,7 @@ static ma_err valid_validate_str(const struct proto* p, const char* const str, s
 
 static ma_err ip4_str_to_bytes(const struct proto* p, const char* const str, const size_t str_len, uint8_t* bytes, size_t* bytes_size) {
   (void)p;
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = 4;
   }
 
@@ -242,7 +242,7 @@ static ma_err ip4_str_to_bytes(const struct proto* p, const char* const str, con
     cur_str_len -= j - cur_str_idx;
     cur_str_idx = j;
 
-    if (bytes != NULL) {
+    if (bytes) {
       bytes[i] = (uint8_t)tmp_digit;
     }
   }
@@ -267,10 +267,10 @@ static ma_err ip4_bytes_to_str(const struct proto* p, const uint8_t* const bytes
     return MA_ERR_INVALID_INPUT;
   }
 
-  if (str != NULL) {
+  if (str) {
     memcpy(str, buf, (size_t)chars);
   }
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = (size_t)chars;
   }
 
@@ -330,7 +330,7 @@ const ma_proto ma_proto_ip4 = {
 const ma_proto* protos = &ma_proto_ip4;  // NOLINT
 
 ma_err ma_add_proto(ma_proto* proto) {
-  if (protos != NULL) {
+  if (protos) {
     proto->next = protos;
   }
   protos = proto;
@@ -339,7 +339,7 @@ ma_err ma_add_proto(ma_proto* proto) {
 
 static ma_err ma_proto_by_name_and_size(const char* name, size_t size, const ma_proto** proto) {
   const ma_proto* cur = protos;
-  while (cur != NULL) {
+  while (cur) {
     if (bytes_eql(name, size, cur->name, cur->name_len)) {
       *proto = cur;
       return MA_ERR_OK;
@@ -356,7 +356,7 @@ ma_err ma_proto_by_name(const char* name, const ma_proto** proto) {
 
 ma_err ma_proto_by_code(const ma_proto_code code, const ma_proto** proto) {
   const ma_proto* cur = protos;
-  while (cur != NULL) {
+  while (cur) {
     if (code == cur->code) {
       *proto = cur;
       return MA_ERR_OK;
@@ -379,7 +379,7 @@ static ma_err ma_bytes_encode_comp(const ma_bytes_comp* const comp, uint8_t* con
     return err;
   }
 
-  if (bytes != NULL) {
+  if (bytes) {
     memcpy(bytes + idx, proto->code_varint, proto->code_varint_size);
   }
   idx += proto->code_varint_size;
@@ -391,7 +391,7 @@ static ma_err ma_bytes_encode_comp(const ma_bytes_comp* const comp, uint8_t* con
       if (proto->val_size != comp->value_size) {
         return MA_ERR_INVALID_INPUT;
       }
-      if (bytes != NULL) {
+      if (bytes) {
         memcpy(bytes + idx, comp->value, comp->value_size);
       }
       idx += comp->value_size;
@@ -402,7 +402,7 @@ static ma_err ma_bytes_encode_comp(const ma_bytes_comp* const comp, uint8_t* con
       if (verr) {
         return MA_ERR_INVALID_INPUT;
       }
-      if (bytes != NULL) {
+      if (bytes) {
         memcpy(bytes + idx, varint, varint_size);
         memcpy(bytes + idx + varint_size, comp->value, comp->value_size);
       }
@@ -410,7 +410,7 @@ static ma_err ma_bytes_encode_comp(const ma_bytes_comp* const comp, uint8_t* con
     }
   }
 
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = idx;
   }
 
@@ -421,14 +421,14 @@ ma_err ma_bytes_encode(const ma_bytes_comp* const comps, size_t comps_size, uint
   size_t idx = 0;
   for (size_t i = 0; i < comps_size; i++) {
     size_t size = 0;
-    uint8_t* comp_bytes = bytes == NULL ? NULL : bytes + idx;
+    uint8_t* comp_bytes = bytes ? bytes + idx : NULL;
     ma_err err = ma_bytes_encode_comp(&comps[i], comp_bytes, &size);
     if (err) {
       return err;
     }
     idx += size;
   }
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = idx;
   }
   return MA_ERR_OK;
@@ -620,14 +620,14 @@ static ma_err ma_str_encode_comp(const ma_str_comp* const comp, char* const str,
 
   size_t idx = 0;
 
-  if (str != NULL) {
+  if (str) {
     str[0] = '/';
     memcpy(str + 1, proto->name, proto->name_len);
   }
   idx += 1 + proto->name_len;
 
   if (!proto->has_value) {
-    if (str_len != NULL) {
+    if (str_len) {
       *str_len = idx;
     }
     return MA_ERR_OK;
@@ -635,18 +635,18 @@ static ma_err ma_str_encode_comp(const ma_str_comp* const comp, char* const str,
 
   // add leading slash for non-path values
   if (!proto->val_is_path) {
-    if (str != NULL) {
+    if (str) {
       str[idx] = '/';
     }
     idx++;
   }
 
-  if (str != NULL) {
+  if (str) {
     memcpy(str + idx, comp->value, comp->value_len);
   }
   idx += comp->value_len;
 
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = idx;
   }
 
@@ -657,7 +657,7 @@ ma_err ma_str_encode(const ma_str_comp* comps, size_t comps_size, char* str, siz
   size_t idx = 0;
   for (size_t i = 0; i < comps_size; i++) {
     size_t len = 0;
-    char* comp_str = str == NULL ? NULL : str + idx;
+    char* comp_str = str ? str + idx : NULL;
     ma_err err = ma_str_encode_comp(&comps[i], comp_str, &len);
     if (err) {
       return err;
@@ -665,7 +665,7 @@ ma_err ma_str_encode(const ma_str_comp* comps, size_t comps_size, char* str, siz
     idx += len;
   }
 
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = idx;
   }
   return MA_ERR_OK;
@@ -690,7 +690,7 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
     }
 
     // write component varint code
-    if (bytes != NULL) {
+    if (bytes) {
       memcpy(bytes + bytes_idx, proto->code_varint, proto->code_varint_size);
     }
     bytes_idx += proto->code_varint_size;
@@ -710,7 +710,7 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
       if (verr) {
         return MA_ERR_INVALID_INPUT;
       }
-      if (bytes != NULL) {
+      if (bytes) {
         memcpy(bytes + bytes_idx, varint, varint_size);
       }
       bytes_idx += varint_size;
@@ -719,7 +719,7 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
     }
 
     // component value
-    if (bytes != NULL) {
+    if (bytes) {
       err = proto->str_to_bytes(proto, cur_comp.value, cur_comp.value_len, bytes + bytes_idx, NULL);
       if (err) {
         return err;
@@ -728,7 +728,7 @@ ma_err ma_str_to_bytes(const char* str, size_t str_len, uint8_t* bytes, size_t* 
     bytes_idx += size;
   }
 
-  if (bytes_size != NULL) {
+  if (bytes_size) {
     *bytes_size = bytes_idx;
   }
 
@@ -756,7 +756,7 @@ ma_err ma_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_
     }
 
     // write the name
-    if (str != NULL) {
+    if (str) {
       str[cur_idx] = '/';
       memcpy(str + cur_idx + 1, proto->name, proto->name_len);
     }
@@ -764,7 +764,7 @@ ma_err ma_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_
 
     // add a slash prefix if it's not a path value
     if (!proto->val_is_path) {
-      if (str != NULL) {
+      if (str) {
         str[cur_idx] = '/';
       }
       cur_idx++;
@@ -777,7 +777,7 @@ ma_err ma_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_
       return err;
     }
 
-    if (str != NULL) {
+    if (str) {
       err = proto->bytes_to_str(proto, cur_bytes_comp.value, cur_bytes_comp.value_size, str + cur_idx, NULL);
       if (err) {
         return err;
@@ -786,7 +786,7 @@ ma_err ma_bytes_to_str(const uint8_t* bytes, size_t bytes_size, char* str, size_
     cur_idx += size;
   }
 
-  if (str_len != NULL) {
+  if (str_len) {
     *str_len = cur_idx;
   }
 

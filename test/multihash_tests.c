@@ -20,7 +20,7 @@ static void mh_hash_sha2_256_test() {
     fail();
   }
   uint8_t* digest = calloc(result_size, sizeof(uint8_t));
-  if (digest == NULL) {
+  if (!digest) {
     printf("mem error allocating digest\n");
     fail();
   }

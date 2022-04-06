@@ -17,15 +17,19 @@ cd build/tests
 
 cp ../../.clang-tidy .
 
+rm -rf CMakeCache.txt
+
 # build with GCC
-cmake -B . -S ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=gcc
+cmake -DMH_BACKEND_OPENSSL=ON -B . -S ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=gcc
 make
 
 # gcc tests w/ valgrind
 valgrind -s --track-origins=yes ./run-tests
 
+rm -rf CMakeCache.txt
+
 # build with clang & static analysis
-scan-build cmake -B . -S ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang
+scan-build cmake -DMH_BACKEND_OPENSSL=ON -B . -S ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang
 scan-build make
 
 # clang tests w/ valgrind

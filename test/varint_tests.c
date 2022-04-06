@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,9 +13,11 @@
 static void varint_test() {
   // 0 should return w/ size of 1
   {
-    uint8_t* varint = malloc(sizeof(uint8_t) * VARINT_UINT64_MAX_BYTES);
     size_t varint_size = 0;
-    varint_err err = uint64_to_varint(0, varint, &varint_size);
+    varint_err err = uint64_to_varint(0, NULL, &varint_size);
+    printf("varint_size: %lu\n", varint_size);
+    uint8_t* varint = malloc(sizeof(uint8_t) * varint_size);
+    err = uint64_to_varint(0, varint, &varint_size);
     assert_int_equal(0, err);
     assert_int_equal(1, varint_size);
     uint8_t expected[1] = {0};
@@ -24,9 +27,10 @@ static void varint_test() {
 
   // (2^64)-1 should return correctly
   {
-    uint8_t* varint = malloc(sizeof(uint8_t) * VARINT_UINT64_MAX_BYTES);
     size_t varint_size = 0;
-    varint_err err = uint64_to_varint(UINT64_MAX, varint, &varint_size);
+    varint_err err = uint64_to_varint(UINT64_MAX, NULL, &varint_size);
+    uint8_t* varint = malloc(sizeof(uint8_t) * varint_size);
+    err = uint64_to_varint(UINT64_MAX, varint, &varint_size);
     assert_int_equal(0, err);
     assert_int_equal(10, varint_size);
     uint8_t expected[10] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 1};

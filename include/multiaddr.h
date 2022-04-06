@@ -5,18 +5,17 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef enum {
-  MA_ERR_OK = 0,
-  MA_ERR_UNKNOWN_PROTOCOL,
-  MA_ERR_INVALID_INPUT,
-} ma_err;
+typedef uint8_t ma_err;
+#define MA_ERR_OK 0
+#define MA_ERR_UNKNOWN_PROTOCOL 1
+#define MA_ERR_INVALID_INPUT 2
 
 const char* ma_err_str(ma_err err);
 
 typedef uint64_t ma_proto_code;
-const ma_proto_code MA_PROTO_CODE_IP4 = 0x0004;
-const ma_proto_code MA_PROTO_CODE_TCP = 0x0006;
-const ma_proto_code MA_PROTO_CODE_UNIX = 0x0190;
+#define MA_PROTO_CODE_IP4 0x0004
+#define MA_PROTO_CODE_TCP 0x0006
+#define MA_PROTO_CODE_UNIX 0x0190
 
 // There are two kinds of encodings for multiaddrs: byte encoding and string encoding
 //

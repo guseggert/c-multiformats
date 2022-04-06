@@ -25,10 +25,11 @@ static void mb_test_encode(char* input, size_t input_size, mb_enc encoding, char
   printf("\tencoding=%s\texpected=%s\n", encoding_name, expected);
 
   uint8_t* in = (uint8_t*)input;
-  size_t res_size = mb_encode_size(in, input_size, encoding);
+  size_t res_size = 0;
+  mb_err err = mb_encode(in, input_size, encoding, NULL, 0, &res_size);
   uint8_t* res_buf = calloc(res_size, sizeof(uint8_t));
   size_t enc_bytes = 0;
-  mb_err err = mb_encode(in, input_size, encoding, res_buf, res_size, &enc_bytes);
+  err = mb_encode(in, input_size, encoding, res_buf, res_size, &enc_bytes);
 
   printf("\tencoded (%lu)=", enc_bytes);
   for (unsigned long i = 0; i < res_size; i++) {
@@ -59,10 +60,11 @@ cleanup:
 static void mb_test_decode(char* input, size_t input_size, char* expected, size_t expected_size, mb_err expected_err) {
   printf("TEST decode input=%s\n", input);
   uint8_t* in = (uint8_t*)input;
-  size_t res_size = mb_decode_size((uint8_t*)input, input_size);
+  size_t res_size = 0;
+  mb_err err = mb_decode(in, input_size, NULL, NULL, 0, &res_size);
   uint8_t* res_buf = calloc(res_size, sizeof(uint8_t));
   size_t dec_bytes = 0;
-  mb_err err = mb_decode(in, input_size, NULL, res_buf, res_size, &dec_bytes);
+  err = mb_decode(in, input_size, NULL, res_buf, res_size, &dec_bytes);
 
   const char* actual_err_str = mb_err_str(err);
   const char* expected_err_str = mb_err_str(expected_err);

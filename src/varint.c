@@ -1,5 +1,6 @@
 #include "varint.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,10 +32,10 @@ varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_size, uint64_t *c
     v |= (bytes[i] & 0x7fU) << (7 * i);
     size++;
     if (!(bytes[i] & 0x80)) {
-      if (val != NULL) {
+      if (val) {
         *val = v;
       }
-      if (varint_size != NULL) {
+      if (varint_size) {
         *varint_size = size;
       }
       return VARINT_ERR_OK;
@@ -45,17 +46,22 @@ varint_err varint_to_uint64(const uint8_t *bytes, size_t bytes_size, uint64_t *c
 
 varint_err uint64_to_varint(uint64_t n, uint8_t *const varint, size_t *const varint_size) {
   uint64_t a = 0;
-  for (size_t i = 0; i < VARINT_UINT64_MAX_BYTES; i++) {
-    a += n >= 0x80;
-    if (varint != NULL) {
+  if (varint) {
+    // first byte is always zero
+    varint[0] = 0;
+    for (size_t i = 0; i < VARINT_UINT64_MAX_BYTES && n > 0; i++) {
+      a += n >= 0x80;
       varint[i] = (uint8_t)(n | 0x80);
+      n >>= 7;
     }
-    n >>= 7;
+    varint[a] &= 0x7f;
+  } else {
+    for (size_t i = 0; i < VARINT_UINT64_MAX_BYTES && n > 0; i++) {
+      a += n >= 0x80;
+      n >>= 7;
+    }
   }
-  if (varint != NULL) {
-    varint[a] ^= 0x80;
-  }
-  if (varint_size != NULL) {
+  if (varint_size) {
     *varint_size = a + 1;
   }
   return VARINT_ERR_OK;

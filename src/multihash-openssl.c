@@ -32,8 +32,6 @@ mh_err mh_openssl_hash(const EVP_MD* md, const uint8_t* const input, size_t inpu
 
 mh_err mh_openssl_hash_size(const EVP_MD* md, size_t input_size, size_t* const digest_size) {
   (void)input_size;
-  // to avoid heap allocations, this returns the cumulative size of both the digest and the context
-  // and then we divide the memory into those two pieces when we use it to compute the digest
   int size = EVP_MD_size(md);
   *digest_size = (size_t)size;
   return MH_ERR_OK;

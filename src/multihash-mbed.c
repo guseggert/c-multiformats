@@ -10,7 +10,7 @@
 static mh_err mh_mbed_hash(mbedtls_md_type_t code, const uint8_t* const input, size_t input_size, uint8_t* const digest, size_t digest_size) {
   (void)digest_size;
   const mbedtls_md_info_t* md_info = mbedtls_md_info_from_type(code);
-  if (md_info == NULL) {
+  if (!md_info) {
     return MH_ERR_UNSUPPORTED_HASHFN;
   }
   int err = mbedtls_md(md_info, (unsigned char*)input, input_size, (unsigned char*)digest);
@@ -23,7 +23,7 @@ static mh_err mh_mbed_hash_size(mbedtls_md_type_t code, size_t input_size, size_
   (void)input_size;
   (void)digest_size;
   const mbedtls_md_info_t* md_info = mbedtls_md_info_from_type(code);
-  if (md_info == NULL) {
+  if (!md_info) {
     return MH_ERR_UNSUPPORTED_HASHFN;
   }
   unsigned char size = mbedtls_md_get_size(md_info);

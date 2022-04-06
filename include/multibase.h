@@ -4,28 +4,26 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef enum {
-  MB_ERR_OK = 0,
-  MB_ERR_UNKNOWN_ENC,
-  MB_ERR_INVALID_INPUT,
-  MB_ERR_BUF_SIZE,
-} mb_err;
+typedef uint8_t mb_err;
+#define MB_ERR_OK 0
+#define MB_ERR_UNKNOWN_ENC 1
+#define MB_ERR_INVALID_INPUT 2
+#define MB_ERR_BUF_SIZE 3
 
 const char* mb_err_str(mb_err err);
 
-#define NUM_ENCODINGS 10
-typedef enum {
-  MB_ENC_IDENTITY = 0,
-  MB_ENC_BASE2,
-  MB_ENC_BASE10,
-  MB_ENC_BASE16,
-  MB_ENC_BASE16UPPER,
-  MB_ENC_BASE32,
-  MB_ENC_BASE32UPPER,
-  MB_ENC_BASE58BTC,
-  MB_ENC_BASE64,
-  MB_ENC_BASE64URL,
-} mb_enc;
+#define MB_NUM_ENCODINGS 10
+typedef uint8_t mb_enc;
+#define MB_ENC_IDENTITY 0
+#define MB_ENC_BASE2 1
+#define MB_ENC_BASE10 2
+#define MB_ENC_BASE16 3
+#define MB_ENC_BASE16UPPER 4
+#define MB_ENC_BASE32 5
+#define MB_ENC_BASE32UPPER 6
+#define MB_ENC_BASE58BTC 7
+#define MB_ENC_BASE64 8
+#define MB_ENC_BASE64URL 9
 
 /**
  * Encodes @input_size bytes of @input into a multibase string using @encoding, stored in @result_buf.
@@ -41,22 +39,12 @@ mb_err mb_encode(const uint8_t* input, size_t input_size, mb_enc encoding, uint8
                  size_t* result_size);
 
 /**
- * Returns the recommended buffer size for encoding @input, so that the caller can allocate memory for encoding.
- *
- * This guarantees to return a size >= the actual encoded size. I.e. in some cases the encoded representation may be
- * smaller than the value computed by this function.
- */
-size_t mb_encode_size(const uint8_t* input, size_t input_size, mb_enc encoding);
-
-/**
  * Directly encodes @input_size bytes of @input into @result_buf without a multibase prefix, encoded as @encoding.
  *
  * @result_buf must be cleared before calling this.
  */
 mb_err mb_encode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
                     size_t* result_size);
-
-size_t mb_encode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding);
 
 /**
  * Decodes @input_size bytes of @input, stored in @result_buf. See mb_encode().
@@ -67,21 +55,12 @@ mb_err mb_decode(const uint8_t* input, size_t input_size, mb_enc* encoding, uint
                  size_t* result_size);
 
 /**
- * Returns the recommended buffer size for decoding @input, so that the caller can allocate memory for decoding.
- *
- * @see mb_encode_len()
- */
-size_t mb_decode_size(const uint8_t* input, size_t input_size);
-
-/**
  * Decodes @input_size bytes of @input into @result_buf, assuming it is encoded as @encoding without the multibase prefix.
  *
  * @result_buf must be cleared before calling this.
  */
 mb_err mb_decode_as(const uint8_t* input, size_t input_size, mb_enc encoding, uint8_t* result_buf, size_t result_buf_size,
                     size_t* result_size);
-
-size_t mb_decode_as_size(const uint8_t* input, size_t input_size, mb_enc encoding);
 
 /**
  * Sets @enc to the encoding matching @name.

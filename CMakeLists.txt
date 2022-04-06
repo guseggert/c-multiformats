@@ -15,6 +15,10 @@ string(APPEND CMAKE_LINKER_FLAGS_RELEASE " -shared -Wl,-z,defs -Wl,-z,now")
 string(APPEND CMAKE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer")
 string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer")
 
+option(MH_BACKEND_OPENSSL "Use OpenSSL hash functions" OFF)
+option(MH_BACKEND_GCRYPT "Use gcrypt hash functions" OFF)
+option(MH_BACKEND_MBED "Use mbed hash functions" OFF)
+
 set(
   CMAKE_C_CLANG_TIDY
   clang-tidy;

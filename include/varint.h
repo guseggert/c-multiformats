@@ -4,27 +4,27 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef enum {
-  VARINT_ERR_OK = 0,
-  VARINT_ERR_INVALID_INPUT,
-  VARINT_ERR_INPUT_TOO_BIG,
-  VARINT_ERR_BUF_SIZE,
-} varint_err;
+typedef uint8_t varint_err;
+#define VARINT_ERR_OK 0
+#define VARINT_ERR_INVALID_INPUT 1
+#define VARINT_ERR_INPUT_TOO_BIG 2
+#define VARINT_ERR_BUF_SIZE 3
 
-const char* varint_err_str(varint_err err);
+const char *varint_err_str(varint_err err);
 
 /**
  * The maximum number of bytes to encode a uint64 as a varint.
+ *
+ * This can be used for allocating buffers instead of computing varint lengths.
  */
 #define VARINT_UINT64_MAX_BYTES 10
 
 /**
  * Converts the uint64 @n into a varint and stores @varint_size bytes in @varint.
  *
- * The @varint buffer must be long enough to hold the varint. Generally the buffer should be of size @VARINT_UINT64_MAX_BYTES.
+ * The @varint buffer must be long enough to hold the varint. Varints will not exceed @VARINT_UINT64_MAX_BYTES bytes.
  *
  * Both @varint and @varint_len are respectively set only if they are not NULL, otherwise they are ignored.
- * So you can e.g. pre-compute the length of a varint without the varint by passing NULL for @varint.
  */
 varint_err uint64_to_varint(uint64_t n, uint8_t *varint, size_t *varint_size);
 
